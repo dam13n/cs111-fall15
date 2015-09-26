@@ -6,6 +6,7 @@
 #include <error.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <assert.h>
 
@@ -33,12 +34,31 @@ make_command_stream (int (*get_next_byte) (void *),
      You can also use external functions defined in the GNU C Library.  */
   // error (1, 0, "command reading not yet implemented");
   
-  fprintf (stderr, "Called make_command_stream.\n");
+  FILE *stream;
+  size_t size;
+  char *word;
+  stream = open_memstream (&word, &size);
+
+  // fprintf (stderr, "Called make_command_stream.\n");
   int c;
   while ((c = (*get_next_byte) (get_next_byte_argument)) != EOF)
     {
-      fprintf (stderr, "Called get_next_byte.\n");
-      fprintf (stderr, "%c\n", c);
+      // fprintf (stderr, "Called get_next_byte. Got char: %c\n", c);
+      
+      if (c != '\n' && c != ' ')
+	{
+	  fprintf (stream, "%c",  c);
+	  fflush (stream);
+	}
+      else
+	{
+	  if (strlen (word) > 0)
+	    {
+	      fprintf (stderr, "Word: %s\n", word);
+	    }
+	    free (word);
+	  stream = open_memstream (&word, &size);
+	}
     }
 
   return 0;
@@ -59,14 +79,14 @@ read_command_stream (command_stream_t s)
 int 
 isOperator (char *input)
 {
-  if (!strcmp (input, "&&")      
-      || !strcmp (input, "||")
-      || !strcmp (input, "|")
-      || !strcmp (input, ";")
-      || !strcmp (input, "(")
-      || !strcmp (input, ")")
-      || !strcmp (input, "<")
-      || !strcmp (input, ">")
+  if (!strcmp (input, "&&") ||
+      !strcmp (input, "||") ||
+      !strcmp (input, "|") ||
+      !strcmp (input, ";") ||
+      !strcmp (input, "(") ||
+      !strcmp (input, ")") ||
+      !strcmp (input, "<") ||
+      !strcmp (input, ">")
       )
     {
       fprintf (stderr, "Encountered operator (special character).\n");
