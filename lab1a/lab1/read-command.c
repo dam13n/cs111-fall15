@@ -56,7 +56,7 @@ isOperand (char *input)
       || !strcmp (input, ">")
       )
     {
-      printf ("Encountered operand (special character).\n");
+      fprintf (stderr, "Encountered operand (special character).\n");
       return 1;
     }
   return 0;
@@ -77,5 +77,5 @@ testIsOperand (void)
   assert (isOperand ("") == 0);
   assert (isOperand ("asd7f2lsd&") == 0);
   assert (isOperand ("&") == 0);
-  printf ("All tests for 'isOperand' passed.\n");
+  fprintf (stderr, "All tests for 'isOperand' passed.\n");
 }
