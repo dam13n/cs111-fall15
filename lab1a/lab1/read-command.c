@@ -10,9 +10,9 @@
 #include <assert.h>
 
 /* Helper functions with tests */
-// Returns 1 if input is operand
-int isOperand (char *input);
-void testIsOperand (void);
+// Returns 1 if input is operator
+int isOperator (char *input);
+void testIsOperator (void);
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
@@ -45,7 +45,7 @@ read_command_stream (command_stream_t s)
 /* Helper functions with tests*/
 
 int 
-isOperand (char *input)
+isOperator (char *input)
 {
   if (!strcmp (input, "&&")
       || !strcmp (input, "||")
@@ -57,26 +57,26 @@ isOperand (char *input)
       || !strcmp (input, ">")
       )
     {
-      fprintf (stderr, "Encountered operand (special character).\n");
+      fprintf (stderr, "Encountered operator (special character).\n");
       return 1;
     }
   return 0;
 }
 
 void
-testIsOperand (void)
+testIsOperator (void)
 {
-  assert (isOperand ("&&") == 1);
-  assert (isOperand ("||") == 1);
-  assert (isOperand ("|") == 1);
-  assert (isOperand ("(") == 1);
-  assert (isOperand (")") == 1);
-  assert (isOperand ("<") == 1);
-  assert (isOperand (">") == 1);
-  assert (isOperand (";") == 1);
-  assert (isOperand ("word") == 0);
-  assert (isOperand ("") == 0);
-  assert (isOperand ("asd7f2lsd&") == 0);
-  assert (isOperand ("&") == 0);
-  fprintf (stderr, "All tests for 'isOperand' passed.\n");
+  assert (isOperator ("&&") == 1);
+  assert (isOperator ("||") == 1);
+  assert (isOperator ("|") == 1);
+  assert (isOperator ("(") == 1);
+  assert (isOperator (")") == 1);
+  assert (isOperator ("<") == 1);
+  assert (isOperator (">") == 1);
+  assert (isOperator (";") == 1);
+  assert (isOperator ("word") == 0);
+  assert (isOperator ("") == 0);
+  assert (isOperator ("asd7f2lsd&") == 0);
+  assert (isOperator ("&") == 0);
+  fprintf (stderr, "All tests for 'isOperator' passed.\n");
 }
