@@ -19,6 +19,10 @@ void testIsOperator (void);
 
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
+struct command_stream
+{
+  struct command_t *commands;
+};
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
@@ -29,6 +33,14 @@ make_command_stream (int (*get_next_byte) (void *),
      You can also use external functions defined in the GNU C Library.  */
   // error (1, 0, "command reading not yet implemented");
   
+  fprintf (stderr, "Called make_command_stream.\n");
+  int c;
+  while ((c = (*get_next_byte) (get_next_byte_argument)) != EOF)
+    {
+      fprintf (stderr, "Called get_next_byte.\n");
+      fprintf (stderr, "%c\n", c);
+    }
+
   return 0;
 }
 
