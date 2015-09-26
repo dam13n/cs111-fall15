@@ -47,7 +47,7 @@ read_command_stream (command_stream_t s)
 int 
 isOperator (char *input)
 {
-  if (!strcmp (input, "&&")
+  if (!strcmp (input, "&&")      
       || !strcmp (input, "||")
       || !strcmp (input, "|")
       || !strcmp (input, ";")
