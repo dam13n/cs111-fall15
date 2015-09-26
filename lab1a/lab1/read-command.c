@@ -11,6 +11,31 @@
 #include <assert.h>
 
 /* Helper functions with tests */
+
+enum token_type
+  {
+    TOKEN_WORD,
+    TOKEN_NEWLINE,
+    TOKEN_AND,
+    TOKEN_SEQUENCE,
+    TOKEN_OR,
+    TOKEN_PIPE,
+    TOKEN_OPEN_PAREN,
+    TOKEN_CLOSE_PAREN,
+    TOKEN_REDIR_INPUT,
+    TOKEN_REIDR_OUTPUT
+  };
+
+struct token
+{
+  enum token_type type;
+  char *word;
+};
+
+typedef struct token *token_t;
+
+// 
+
 // Returns 1 if input is operator
 int isOperator (char *input);
 void testIsOperator (void);
