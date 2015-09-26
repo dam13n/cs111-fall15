@@ -28,6 +28,7 @@ make_command_stream (int (*get_next_byte) (void *),
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
   // error (1, 0, "command reading not yet implemented");
+  
   return 0;
 }
 
@@ -36,7 +37,7 @@ read_command_stream (command_stream_t s)
 {
   /* FIXME: Replace this with your implementation too.  */
   // error (1, 0, "command reading not yet implemented");
-  testIsOperand ();
+  
   return 0;
 }
 
