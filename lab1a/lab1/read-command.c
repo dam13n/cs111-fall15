@@ -12,7 +12,7 @@
 
 /* Helper functions with tests */
 
-enum token_type
+typedef enum token_type
   {
     TOKEN_WORD,
     TOKEN_NEWLINE,
@@ -23,8 +23,8 @@ enum token_type
     TOKEN_OPEN_PAREN,
     TOKEN_CLOSE_PAREN,
     TOKEN_REDIR_INPUT,
-    TOKEN_REIDR_OUTPUT
-  };
+    TOKEN_REDIR_OUTPUT
+  } token_type;
 
 struct token
 {
@@ -34,11 +34,9 @@ struct token
 
 typedef struct token *token_t;
 
-// 
+token_type get_token_type (char *word);
+token_t get_token_t_from_word (char *word);
 
-// Returns 1 if input is operator
-int isOperator (char *input);
-void testIsOperator (void);
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
@@ -63,12 +61,9 @@ make_command_stream (int (*get_next_byte) (void *),
   char *word;
   stream = open_memstream (&word, &size);
 
-  // fprintf (stderr, "Called make_command_stream.\n");
   int c;
   while ((c = (*get_next_byte) (get_next_byte_argument)) != EOF)
-    {
-      // fprintf (stderr, "Called get_next_byte. Got char: %c\n", c);
-      
+    {      
       if (c != '\n' && c != ' ')
 	{
 	  fprintf (stream, "%c",  c);
@@ -78,16 +73,11 @@ make_command_stream (int (*get_next_byte) (void *),
 	{
 	  if (strlen (word) > 0)
 	    {
-	      if (isOperator (word))
-		{
-		  fprintf (stderr, "Operator: %s\n", word);
-		}
-	      else
-		{
-		  fprintf (stderr, "Word: %s\n", word);
-		}
+	      token_t token = get_token_t_from_word (word);
+	      fprintf (stderr, "type: %d, word: %s\n", (*token).type, (*token).word);
+	      free (token);
 	    }
-	    free (word);
+	  free (word);
 	  stream = open_memstream (&word, &size);
 	}
     }
@@ -106,38 +96,36 @@ read_command_stream (command_stream_t s)
 
 /* Helper functions with tests*/
 
-int 
-isOperator (char *input)
+token_t
+get_token_t_from_word (char *word)
 {
-  if (!strcmp (input, "&&") ||
-      !strcmp (input, "||") ||
-      !strcmp (input, "|") ||
-      !strcmp (input, ";") ||
-      !strcmp (input, "(") ||
-      !strcmp (input, ")") ||
-      !strcmp (input, "<") ||
-      !strcmp (input, ">")
-      )
-    {
-      return 1;
-    }
-  return 0;
+  token_t token = (token_t) malloc(sizeof(token_t));
+  (*token).type = get_token_type (word);
+  (*token).word = (char *) malloc(sizeof(word));
+  strcpy((*token).word, word);
+  return token;
 }
 
-void
-testIsOperator (void)
+token_type
+get_token_type (char *word)
 {
-  assert (isOperator ("&&") == 1);
-  assert (isOperator ("||") == 1);
-  assert (isOperator ("|") == 1);
-  assert (isOperator ("(") == 1);
-  assert (isOperator (")") == 1);
-  assert (isOperator ("<") == 1);
-  assert (isOperator (">") == 1);
-  assert (isOperator (";") == 1);
-  assert (isOperator ("word") == 0);
-  assert (isOperator ("") == 0);
-  assert (isOperator ("asd7f2lsd&") == 0);
-  assert (isOperator ("&") == 0);
-  fprintf (stderr, "All tests for 'isOperator' passed.\n");
+  if (!strcmp (word, "\n"))
+    return TOKEN_NEWLINE;
+  else if (!strcmp (word, "&&"))
+    return TOKEN_AND;
+  else if (!strcmp (word, ";"))
+    return TOKEN_SEQUENCE;
+  else if (!strcmp (word, "||"))
+    return TOKEN_OR;
+  else if (!strcmp (word, "|"))
+    return TOKEN_PIPE;
+  else if (!strcmp (word, "("))
+    return TOKEN_OPEN_PAREN;
+  else if (!strcmp (word, ")"))
+    return TOKEN_CLOSE_PAREN;
+  else if (!strcmp (word, "<"))
+    return TOKEN_REDIR_INPUT;
+  else if (!strcmp (word, ">"))
+    return TOKEN_REDIR_OUTPUT;
+  return TOKEN_WORD;
 }
