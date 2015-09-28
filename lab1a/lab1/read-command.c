@@ -61,20 +61,60 @@ make_command_stream (int (*get_next_byte) (void *),
   char *word;
   stream = open_memstream (&word, &size);
 
+  int is_special;
+  int special_char;
+
   int c;
   while ((c = (*get_next_byte) (get_next_byte_argument)) != EOF)
     {      
       if (c != '\n' && c != ' ')
 	{
-	  fprintf (stream, "%c",  c);
-	  fflush (stream);
+	  if (is_special)
+	    {
+	      if (special_char == c)
+		{
+		  token_t token = get_token_t_from_word (word);
+		  fprintf (stderr, "type: %d, word: %s\n", 
+		       (*token).type, (*token).word);
+		  free (token);
+		  free (word);
+		  stream = open_memstream (&word, &size);
+		  is_special = 0;
+		}
+	      else
+		{
+		  is_special = 0;
+		}
+	      fprintf (stream, "%c", special_char);
+	      fflush (stream);
+	      fprintf (stream, "%c",  c);
+	      fflush (stream);
+	    }
+	  else if (c == '&' || c == '|')
+	    {
+	      is_special = 1;
+	      special_char = c;
+	    }
+	  else
+	    {
+	      fprintf (stream, "%c",  c);
+	      fflush (stream);
+	    }
 	}
       else
 	{
+	  if (is_special)
+	    {
+	      fprintf (stream, "%c", special_char);
+	      fflush (stream);
+	      is_special = 0;
+	    }
+
 	  if (strlen (word) > 0)
 	    {
 	      token_t token = get_token_t_from_word (word);
-	      fprintf (stderr, "type: %d, word: %s\n", (*token).type, (*token).word);
+	      fprintf (stderr, "type: %d, word: %s\n", 
+		       (*token).type, (*token).word);
 	      free (token);
 	    }
 	  free (word);
