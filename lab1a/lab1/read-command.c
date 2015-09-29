@@ -36,9 +36,9 @@ struct token
 typedef struct token *token_t;
 
 token_type get_token_type (char *word);
-token_t get_token_t_from_word (char *word);
-
-void token_print (char **word, size_t *size, FILE **stream);
+token_t get_token (char *word, token_type type, int *is_word);
+void print_token (token_t token);
+void clean_up_token (token_t *token, char **word, FILE **stream, size_t *size);
 
 
 /* FIXME: You may need to add #include directives, macro definitions,
@@ -65,6 +65,8 @@ make_command_stream (int (*get_next_byte) (void *),
   stream = open_memstream (&word, &size);
 
   int is_special = 0;
+  int is_new_line = 0;
+  int is_word = 0;
   int special_char;
 
   int c;
@@ -76,17 +78,42 @@ make_command_stream (int (*get_next_byte) (void *),
 	    {
 	      if (special_char == c)
 		{
-		  token_print (&word, &size, &stream);
+		  token_t token = get_token (word, get_token_type (word), &is_word);
+		  print_token (token);
+		  clean_up_token (&token, &word, &stream, &size);
+
+		  fprintf (stream, "%c%c", special_char, c);
+		  fflush (stream);
+
+		  token = get_token (word, get_token_type (word), &is_word);
+		  print_token (token);
+		  clean_up_token (&token, &word, &stream, &size);
+
 		  is_special = 0;
 		}
 	      else
 		{
+		  if (special_char == '|')
+		    {
+		      token_t token = get_token (word, get_token_type (word), &is_word);
+		      print_token (token);
+		      clean_up_token (&token, &word, &stream, &size);
+		      
+		      fprintf (stream, "%c", special_char);
+		      fflush (stream);
+		      
+		      token = get_token (word, get_token_type (word), &is_word);
+		      print_token (token);
+		      clean_up_token (&token, &word, &stream, &size);
+		    }
+		  else
+		    {
+		      fprintf (stream, "%c%c", special_char, c);
+		      fflush (stream);
+		    }
+
 		  is_special = 0;
 		}
-	      fprintf (stream, "%c", special_char);
-	      fflush (stream);
-	      fprintf (stream, "%c",  c);
-	      fflush (stream);
 	    }
 	  else if (c == '&' || c == '|')
 	    {
@@ -99,19 +126,63 @@ make_command_stream (int (*get_next_byte) (void *),
 		   c == ')' ||
 		   c == ';')
 	    {
-	      token_print (&word, &size, &stream);
+	      token_t token = get_token (word, get_token_type (word), &is_word);
+	      print_token (token);
+	      clean_up_token (&token, &word, &stream, &size);
 
 	      fprintf (stream, "%c", c);
 	      fflush (stream);
 
-	      token_print (&word, &size, &stream);
+	      token = get_token (word, get_token_type (word), &is_word);
+	      print_token (token);
+	      clean_up_token (&token, &word, &stream, &size);
 	    }
 	  else
 	    {
 	      fprintf (stream, "%c",  c);
 	      fflush (stream);
 	    }
+	  is_new_line = 0;
 	}
+
+      else if (c == '\n')
+	{
+	  if (is_new_line)
+	    {
+	      if (is_special)
+		{
+		  token_t token = get_token (word, get_token_type (word), &is_word);
+		  print_token (token);
+		  clean_up_token (&token, &word, &stream, &size);
+
+		  fprintf (stream, "%c", special_char);
+		  fflush (stream);
+		  is_special = 0;
+		}
+	      
+	      token_t token = get_token (word, get_token_type (word), &is_word);
+	      print_token (token);
+	      clean_up_token (&token, &word, &stream, &size);
+	      
+	      if (is_word)
+		{
+		  token = get_token ("", TOKEN_SEPARATOR, &is_word);
+		  print_token (token);
+		  clean_up_token (&token, &word, &stream, &size);
+
+		  is_new_line = 0;
+		}
+	      else
+		{
+		  
+		}
+	    }
+	  else
+	    {
+	      is_new_line = 1;
+	    }
+	}
+
       else
 	{
 	  if (is_special)
@@ -122,15 +193,22 @@ make_command_stream (int (*get_next_byte) (void *),
 	    }
 	  if (strlen (word) > 0)
 	    {
-	      token_print (&word, &size, &stream);
+	      token_t token = get_token (word, get_token_type (word), &is_word);
+	      print_token (token);
+	      clean_up_token (&token, &word, &stream, &size);
 	    }
 	  else
 	    {
 	      free (word);
 	      stream = open_memstream (&word, &size);
 	    }
+	  is_new_line = 0;
 	}
     }
+
+  token_t token = get_token (word, get_token_type (word), &is_word);
+  print_token (token);
+  clean_up_token (&token, &word, &stream, &size);
 
   return 0;
 }
@@ -143,17 +221,53 @@ read_command_stream (command_stream_t s)
   return 0;
 }
 
-
-/* Helper functions with tests*/
+/* Helper functions with tests */
 
 token_t
-get_token_t_from_word (char *word)
+get_token (char *word, token_type type, int *is_word)
 {
-  token_t token = (token_t) malloc(sizeof(token_t));
-  (*token).type = get_token_type (word);
-  (*token).word = (char *) malloc(sizeof(word));
-  strcpy((*token).word, word);
+  if (word == NULL)
+    return NULL;
+  if (strlen (word) == 0 && type != TOKEN_SEPARATOR)
+    return NULL;
+
+  token_t token = (token_t) malloc (sizeof (token_t));
+  (*token).type = type;
+  (*token).word = (char *) malloc (sizeof (word));
+  strcpy ((*token).word, word);
+
+  if (type == TOKEN_WORD)
+    *is_word = 1;
+  else
+    *is_word = 0;
+
   return token;
+}
+
+void
+print_token (token_t token)
+{
+  if (token == NULL)
+    return;
+  token_type type = (*token).type;
+  if (type == TOKEN_SEPARATOR)
+    fprintf (stderr, "type: %d\n", (*token).type);
+  else
+    fprintf (stderr, "type: %d\t word: %s\n", (*token).type, (*token).word);
+}
+
+void
+clean_up_token (token_t *token, char **word, FILE **stream, size_t *size)
+{
+  if (token == NULL)
+    return;
+  if (word == NULL)
+    return;
+  if (stream == NULL)
+    return;
+  free (*token);
+  free (*word);
+  *stream = open_memstream (word, size);
 }
 
 token_type
@@ -178,17 +292,4 @@ get_token_type (char *word)
   else if (!strcmp (word, ">"))
     return TOKEN_REDIR_OUTPUT;
   return TOKEN_WORD;
-}
-
-void token_print (char **word, size_t *size, FILE **stream)
-{
-  if (word == NULL)
-    return;
-  if (strlen (*word) == 0)
-    return;
-  token_t token = get_token_t_from_word (*word);
-  fprintf (stderr, "type: %d, word: %s\n", (*token).type, (*token).word);
-  free (token);
-  free (*word);
-  *stream = open_memstream (word, size);
 }
