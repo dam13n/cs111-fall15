@@ -23,7 +23,8 @@ typedef enum token_type
     TOKEN_OPEN_PAREN,
     TOKEN_CLOSE_PAREN,
     TOKEN_REDIR_INPUT,
-    TOKEN_REDIR_OUTPUT
+    TOKEN_REDIR_OUTPUT,
+    TOKEN_SEPARATOR
   } token_type;
 
 struct token
@@ -36,6 +37,8 @@ typedef struct token *token_t;
 
 token_type get_token_type (char *word);
 token_t get_token_t_from_word (char *word);
+
+void token_print (char **word, size_t *size, FILE **stream);
 
 
 /* FIXME: You may need to add #include directives, macro definitions,
@@ -61,24 +64,19 @@ make_command_stream (int (*get_next_byte) (void *),
   char *word;
   stream = open_memstream (&word, &size);
 
-  int is_special;
+  int is_special = 0;
   int special_char;
 
   int c;
   while ((c = (*get_next_byte) (get_next_byte_argument)) != EOF)
-    {      
+    {
       if (c != '\n' && c != ' ')
 	{
 	  if (is_special)
 	    {
 	      if (special_char == c)
 		{
-		  token_t token = get_token_t_from_word (word);
-		  fprintf (stderr, "type: %d, word: %s\n", 
-		       (*token).type, (*token).word);
-		  free (token);
-		  free (word);
-		  stream = open_memstream (&word, &size);
+		  token_print (&word, &size, &stream);
 		  is_special = 0;
 		}
 	      else
@@ -95,6 +93,19 @@ make_command_stream (int (*get_next_byte) (void *),
 	      is_special = 1;
 	      special_char = c;
 	    }
+	  else if (c == '<' || 
+		   c == '>' ||
+		   c == '(' ||
+		   c == ')' ||
+		   c == ';')
+	    {
+	      token_print (&word, &size, &stream);
+
+	      fprintf (stream, "%c", c);
+	      fflush (stream);
+
+	      token_print (&word, &size, &stream);
+	    }
 	  else
 	    {
 	      fprintf (stream, "%c",  c);
@@ -109,16 +120,15 @@ make_command_stream (int (*get_next_byte) (void *),
 	      fflush (stream);
 	      is_special = 0;
 	    }
-
 	  if (strlen (word) > 0)
 	    {
-	      token_t token = get_token_t_from_word (word);
-	      fprintf (stderr, "type: %d, word: %s\n", 
-		       (*token).type, (*token).word);
-	      free (token);
+	      token_print (&word, &size, &stream);
 	    }
-	  free (word);
-	  stream = open_memstream (&word, &size);
+	  else
+	    {
+	      free (word);
+	      stream = open_memstream (&word, &size);
+	    }
 	}
     }
 
@@ -168,4 +178,17 @@ get_token_type (char *word)
   else if (!strcmp (word, ">"))
     return TOKEN_REDIR_OUTPUT;
   return TOKEN_WORD;
+}
+
+void token_print (char **word, size_t *size, FILE **stream)
+{
+  if (word == NULL)
+    return;
+  if (strlen (*word) == 0)
+    return;
+  token_t token = get_token_t_from_word (*word);
+  fprintf (stderr, "type: %d, word: %s\n", (*token).type, (*token).word);
+  free (token);
+  free (*word);
+  *stream = open_memstream (word, size);
 }
