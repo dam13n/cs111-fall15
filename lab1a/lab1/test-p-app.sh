@@ -15,9 +15,20 @@ g++ -c foo.c
 
 : : :
 
-cat < /etc/passwd | tr a-z A-Z | sort -u  || echo sort failed!
+cat < /etc/passwd | tr a-z A-Z | sort -u || echo sort failed!
 
 a b<c > d
+
+cat < /etc/passwd | tr a-z A-Z | sort -u > out || echo sort failed!
+
+a&&b||
+ c &&
+  d | e && f|
+
+g<h
+
+# This is a weird example: nobody would ever want to run this.
+a<b>c|d<e>f|g<h>i
 EOF
 
 cat >test.exp <<'EOF'
@@ -37,6 +48,34 @@ cat >test.exp <<'EOF'
     echo sort failed!
 # 5
   a b<c>d
+# 6
+      cat</etc/passwd \
+    |
+      tr a-z A-Z \
+    |
+      sort -u>out \
+  ||
+    echo sort failed!
+# 7
+        a \
+      &&
+        b \
+    ||
+      c \
+  &&
+      d \
+    |
+      e \
+  &&
+      f \
+    |
+      g<h
+# 8
+    a<b>c \
+  |
+    d<e>f \
+  |
+    g<h>i
 EOF
 
 ../timetrash -p test.sh >test.out 2>test.err || exit
