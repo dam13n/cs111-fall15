@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include <assert.h>
 
@@ -37,8 +38,6 @@ typedef struct token
 typedef token *token_t;
 
 
-
-
 // token_t get_token (char *word, token_type type, int *is_word);
 // void print_token (token_t token);
 // void clean_up_token (token_t * token, char **word, FILE ** stream,
@@ -65,6 +64,10 @@ void process_print (char *word, token_type type, FILE *stream);
 
 void stream_write (FILE *stream, int c);
 
+int is_valid (int c);
+int is_special (int c);
+
+
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
@@ -74,248 +77,155 @@ make_command_stream (int (*get_next_byte) (void *),
 	char *buffer;
 	stream = open_memstream (&buffer, &size);
 
-	// // flags
-	// int comment_flag = 0;
-	// int pc_set_flag = 0;
-	// int and_or_flag = 0;
-	// int special_flag = 0;
-
-	// currently read character
 	int c;
-	// // previously read character
-	// int pc;
-
 	while ((c = (*get_next_byte) (get_next_byte_argument)) != EOF)
 	{
 		fprintf(stream, "%c", c);
 		fflush (stream);
 	}
-	fprintf(stderr, "%s\n", buffer);
-		// switch (c)
-		// {
-		// 	case '\n':
-		// 	{
-		// 		if (comment_flag)
-		// 		{
-		// 			comment_flag = 0;
-		// 			process_print (word, TOKEN_COMMENT, stream);
-		// 		}
-		// 		else if (pc_set_flag)
-		// 		{
-		// 			switch (pc)
-		// 			{
-		// 				case '<':
-		// 				case '>':
-		// 				case '(':
-		// 				case ')':
-		// 				case '|':
-		// 					break;
+	fclose (stream);
 
-		// 				case '&':
-		// 				{
-		// 					if (!and_or_flag)
-		// 					{
-		// 						process_print (word, get_token_type (word), stream);
-		// 					}
-		// 					break;
-		// 				}
+	/************ reformat (insert spaces) ************/
 
-		// 				default:
-		// 				{
-		// 					process_print (word, get_token_type (word), stream);
-		// 					break;
-		// 				}
-		// 			}
-		// 		}
-		// 		break;
-		// 	}
+	// state flags
+	int comment_flag = 0;
 
-		// 	case ' ':
-		// 	{
-		// 		if (comment_flag)
-		// 		{
-		// 			stream_write (stream, c);
-		// 		}
-		// 		else if (pc_set_flag)
-		// 		{
-		// 			switch (pc)
-		// 			{
-		// 				case '<':
-		// 				case '>':
-		// 				case '(':
-		// 				case ')':
-		// 				case '|':
-		// 				case '\n':
-		// 					break;
+	unsigned int length = strlen (buffer);
+	char *script = (char *) malloc (2*length);
+	unsigned int pos = 0;
+	unsigned int i = 0;
+	for (; i < length; i++)
+	{
+		int cc = buffer[i];
 
-		// 				case '&':
-		// 				{
-		// 					if (!and_or_flag)
-		// 					{
-		// 						process_print (word, get_token_type (word), stream);
-		// 					}
-		// 					break;
-		// 				}
+		if (comment_flag)
+		{
+			if (cc != '\n')
+			{
+				script[pos] = cc;
+				pos++;
+				continue;
+			}
+			else
+			{
+				script[pos] = cc;
+				pos++;
+				comment_flag = 0;
+				continue;
+			}
+		}
 
-		// 				default:
-		// 				{
-		// 					process_print (word, get_token_type (word), stream);
-		// 					break;
-		// 				}
-		// 			}
-		// 		}
-		// 		break;
-		// 	}
+		if (is_valid (cc) || cc == ' ')
+		{
+			if (cc == '#')
+			{
+				comment_flag = 1;
+			}
 
-		// 	case '|':
-		// 	{
-		// 		if (comment_flag)
-		// 		{
-		// 			stream_write (stream, c);
-		// 		}
-		// 		else if (pc_set_flag)
-		// 		{
-		// 			switch (pc)
-		// 			{
-		// 				case '|':
-		// 				{
-		// 					if (and_or_flag)
-		// 					{
-		// 						// report error
-		// 						exit;
-		// 					}
-		// 					else
-		// 					{
-		// 						stream_write (stream, special_char);
-		// 						stream_write (stream, c);
-		// 						process_print (word, get_token_type (word), stream);
-		// 						and_or_flag = 1;
-		// 					}
-		// 					break;
-		// 				}
+			else if (pos > 0 && (script[pos-1] == '|' || script[pos-1] == '<' 
+				|| script[pos-1] == '>' || script[pos-1] == '(' || script[pos-1] == ')'))
+			{
+				script[pos] = ' ';
+				pos++;
+			}
 
-		// 				case '&':
-		// 				{
-		// 					if (and_or_flag)
-		// 					{
-		// 						stream_write(stream, c);
-		// 						and_or_flag = 0;
-		// 					}
-		// 					else
-		// 					{
-		// 						process_print (word, get_token_type (word), stream);
-		// 						stream_write (stream, c);
-		// 					}
-		// 				}
+			script[pos] = cc;
+			pos++;
 
-		// 				case ' ':
-		// 				case '\n':
-		// 				case '<':
-		// 				case '>':
-		// 				case '(':
-		// 				case ')':
-		// 				{
-		// 					stream_write (stream, c);
-		// 					break;
-		// 				}
+			if ((i+2) < (length-1))
+			{
+				if (buffer[i+1] == '&' && buffer[i+2] == '&')
+				{
+					script[pos] = ' ';
+					pos++;
+					script[pos] = '&';
+					pos++;
+					script[pos] = '&';
+					pos++;
+					script[pos] = ' ';
+					pos++;
+					i += 2;
+				}
+			}
+		}
 
-		// 				default:
-		// 				{
-		// 					process_print (word, get_token_type (word), stream);
-		// 					stream_write (stream, c);
-		// 					break;
-		// 				}
-		// 			}
-		// 		}
-		// 		break;
-		// 	}
+		else if (cc == '\n')
+		{
+			if (script[pos-1] != '\n')
+			{
+				if (script[pos-1] == ' ')
+				{
+					script[pos-1] = cc;
+				}
+				else
+				{
+					script[pos] = cc;
+					pos++;
+				}
+			}
+		}
 
-		// 	case '&':
-		// 	{
-		// 		if (comment_flag)
-		// 		{
-		// 			stream_write (stream, c);
-		// 		}
-		// 		else if (pc_set_flag)
-		// 		{
-		// 			switch (pc)
-		// 			{
-		// 				case '|':
-		// 				{
-		// 					if (and_or_flag)
-		// 					{
-		// 						stream_write (stream, c);
-		// 						and_or_flag = 0;
-		// 					}
-		// 					else
-		// 					{
-		// 						process_print (word, get_token_type (word), stream);
-		// 						stream_write (stream, c);
-		// 					}
-		// 					break;
-		// 				}
+		else if (is_special (cc))
+		{
+			switch (cc)
+			{
+				case '(':
+				case ')':
+				case '<':
+				case '>':
+				{
+					if (script[pos-1] != ' ' && script[pos-1] != '\n')
+					{
+						script[pos] = ' ';
+						pos++;
+						script[pos] = cc;
+						pos++;
+					}
+					else
+					{
+						script[pos] = cc;
+						pos++;
+					}
+					break;
+				}
 
-		// 				case '&':
-		// 				{
-		// 					if (and_or_flag)
-		// 					{
-		// 						// report error
-		// 						exit;
-		// 					}
-		// 					else
-		// 					{
+				case '|':
+				{
+					if (script[pos-1] != ' ' && script[pos-1] != '\n' && script[pos-1] != '|')
+					{
+						script[pos] = ' ';
+						pos++;
+						script[pos] = cc;
+						pos++;
+					}
+					else
+					{
+						script[pos] = cc;
+						pos++;
+					}
+					break;
+				}
 
-		// 						special_flag = 0;
-		// 						and_or_flag = 1;
-		// 					}
-		// 				}
+				case '&':
+				{
+					script[pos] = cc;
+					pos++;
+					break;
+				}
+			}
+		}
+	}
+	script[pos] = '\0';
 
-		// 				default:
-		// 				{
+	fprintf(stderr, "%s\n", script);
 
-		// 				}
-		// 			}
-		// 		}
-		// 		break;
-		// 	}
 
-		// 	case '<':
-		// 	{
-		// 		break;
-		// 	}
+	/************ trim extra spaces & newlines ************/
 
-		// 	case '>':
-		// 	{
-		// 		break;
-		// 	}
 
-		// 	case '(':
-		// 	{
-		// 		break;
-		// 	}
 
-		// 	case ')':
-		// 	{
-		// 		break;
-		// 	}
-
-		// 	case '#':
-		// 	{
-		// 		comment_flag = 1;
-		// 		break;
-		// 	}
-
-		// 	default:
-		// 	{
-		// 		break;
-		// 	}
-		// }
-
-		// // set pc to be equal to c
-		// pc = c;
-		// // set pc_set_flag to 1
-		// pc_set_flag = 1;
-
+	free (buffer);
+	free (script);
 
   return 0;
 }
@@ -326,20 +236,53 @@ read_command_stream (command_stream_t s)
   return 0;
 }
 
-// Helper functions
+int
+is_valid (int c)
+{
+	if (isalpha (c) || isdigit (c))
+		return 1;
 
-// void 
-// stream_write (FILE *stream, int c)
-// {
-// 	fprintf (stream, "%c", c);
-// 	fflush (stream);
-// }
+	switch (c)
+	{
+		case '!':
+		case '%':
+		case '+':
+		case '-':
+		case ',':
+		case '.':
+		case '/':
+		case ':':
+		case '@':
+		case '^':
+		case '_':
+		case '#':
+			return 1;
+			break;
+		default: break;
+	}
 
-// token_t
-// get_token (char *word, token_type)
-// {
+	return 0;
+}
 
-// }
+int
+is_special (int c)
+{
+	switch (c)
+	{
+		case ';':
+		case '|':
+		case '&':
+		case '(':
+		case ')':
+		case '<':
+		case '>':
+			return 1;
+			break;
+		default: break;
+	}
+
+	return 0;
+}
 
 token_type
 get_token_type (char *word)
@@ -365,6 +308,24 @@ get_token_type (char *word)
   return TOKEN_WORD;
 }
 
+
+
+
+
+// Helper functions
+
+// void 
+// stream_write (FILE *stream, int c)
+// {
+// 	fprintf (stream, "%c", c);
+// 	fflush (stream);
+// }
+
+// token_t
+// get_token (char *word, token_type)
+// {
+
+// }
 
 
 // token_t
@@ -610,3 +571,234 @@ get_token_type (char *word)
 
 //   free (word);
 //   fclose (stream);
+
+
+
+
+
+
+
+		// switch (c)
+		// {
+		// 	case '\n':
+		// 	{
+		// 		if (comment_flag)
+		// 		{
+		// 			comment_flag = 0;
+		// 			process_print (word, TOKEN_COMMENT, stream);
+		// 		}
+		// 		else if (pc_set_flag)
+		// 		{
+		// 			switch (pc)
+		// 			{
+		// 				case '<':
+		// 				case '>':
+		// 				case '(':
+		// 				case ')':
+		// 				case '|':
+		// 					break;
+
+		// 				case '&':
+		// 				{
+		// 					if (!and_or_flag)
+		// 					{
+		// 						process_print (word, get_token_type (word), stream);
+		// 					}
+		// 					break;
+		// 				}
+
+		// 				default:
+		// 				{
+		// 					process_print (word, get_token_type (word), stream);
+		// 					break;
+		// 				}
+		// 			}
+		// 		}
+		// 		break;
+		// 	}
+
+		// 	case ' ':
+		// 	{
+		// 		if (comment_flag)
+		// 		{
+		// 			stream_write (stream, c);
+		// 		}
+		// 		else if (pc_set_flag)
+		// 		{
+		// 			switch (pc)
+		// 			{
+		// 				case '<':
+		// 				case '>':
+		// 				case '(':
+		// 				case ')':
+		// 				case '|':
+		// 				case '\n':
+		// 					break;
+
+		// 				case '&':
+		// 				{
+		// 					if (!and_or_flag)
+		// 					{
+		// 						process_print (word, get_token_type (word), stream);
+		// 					}
+		// 					break;
+		// 				}
+
+		// 				default:
+		// 				{
+		// 					process_print (word, get_token_type (word), stream);
+		// 					break;
+		// 				}
+		// 			}
+		// 		}
+		// 		break;
+		// 	}
+
+		// 	case '|':
+		// 	{
+		// 		if (comment_flag)
+		// 		{
+		// 			stream_write (stream, c);
+		// 		}
+		// 		else if (pc_set_flag)
+		// 		{
+		// 			switch (pc)
+		// 			{
+		// 				case '|':
+		// 				{
+		// 					if (and_or_flag)
+		// 					{
+		// 						// report error
+		// 						exit;
+		// 					}
+		// 					else
+		// 					{
+		// 						stream_write (stream, special_char);
+		// 						stream_write (stream, c);
+		// 						process_print (word, get_token_type (word), stream);
+		// 						and_or_flag = 1;
+		// 					}
+		// 					break;
+		// 				}
+
+		// 				case '&':
+		// 				{
+		// 					if (and_or_flag)
+		// 					{
+		// 						stream_write(stream, c);
+		// 						and_or_flag = 0;
+		// 					}
+		// 					else
+		// 					{
+		// 						process_print (word, get_token_type (word), stream);
+		// 						stream_write (stream, c);
+		// 					}
+		// 				}
+
+		// 				case ' ':
+		// 				case '\n':
+		// 				case '<':
+		// 				case '>':
+		// 				case '(':
+		// 				case ')':
+		// 				{
+		// 					stream_write (stream, c);
+		// 					break;
+		// 				}
+
+		// 				default:
+		// 				{
+		// 					process_print (word, get_token_type (word), stream);
+		// 					stream_write (stream, c);
+		// 					break;
+		// 				}
+		// 			}
+		// 		}
+		// 		break;
+		// 	}
+
+		// 	case '&':
+		// 	{
+		// 		if (comment_flag)
+		// 		{
+		// 			stream_write (stream, c);
+		// 		}
+		// 		else if (pc_set_flag)
+		// 		{
+		// 			switch (pc)
+		// 			{
+		// 				case '|':
+		// 				{
+		// 					if (and_or_flag)
+		// 					{
+		// 						stream_write (stream, c);
+		// 						and_or_flag = 0;
+		// 					}
+		// 					else
+		// 					{
+		// 						process_print (word, get_token_type (word), stream);
+		// 						stream_write (stream, c);
+		// 					}
+		// 					break;
+		// 				}
+
+		// 				case '&':
+		// 				{
+		// 					if (and_or_flag)
+		// 					{
+		// 						// report error
+		// 						exit;
+		// 					}
+		// 					else
+		// 					{
+
+		// 						special_flag = 0;
+		// 						and_or_flag = 1;
+		// 					}
+		// 				}
+
+		// 				default:
+		// 				{
+
+		// 				}
+		// 			}
+		// 		}
+		// 		break;
+		// 	}
+
+		// 	case '<':
+		// 	{
+		// 		break;
+		// 	}
+
+		// 	case '>':
+		// 	{
+		// 		break;
+		// 	}
+
+		// 	case '(':
+		// 	{
+		// 		break;
+		// 	}
+
+		// 	case ')':
+		// 	{
+		// 		break;
+		// 	}
+
+		// 	case '#':
+		// 	{
+		// 		comment_flag = 1;
+		// 		break;
+		// 	}
+
+		// 	default:
+		// 	{
+		// 		break;
+		// 	}
+		// }
+
+		// // set pc to be equal to c
+		// pc = c;
+		// // set pc_set_flag to 1
+		// pc_set_flag = 1;
