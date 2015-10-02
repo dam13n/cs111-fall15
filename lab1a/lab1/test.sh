@@ -16,6 +16,7 @@ a&&b||
 
 g<h
 
+# However simple this is, we should not omit.
 a<b>c|d<e>f|g<h>i
     d<e>f
   |
