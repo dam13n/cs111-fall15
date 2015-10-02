@@ -21,6 +21,7 @@ typedef struct node_t {
 
 /************ stack ************/
 typedef struct stack_t {
+	size_t size;
 	node_t *head;
 	node_t *end;
 } stack_t;
@@ -39,11 +40,17 @@ char *get_stream_from_input (int (*get_next_byte) (void *),
 
 
 /************** stack functions **************/
-void print_stack (stack_t *stack);
+stack_t *create_stack ();
+void destroy_stack (stack_t *stack);
+
+size_t size_of_stack (stack_t *stack);
+int is_empty (stack_t *stack);
 void push_end (stack_t *stack, char *val);
 void push_front (stack_t *stack, char *val);
 char *pop_front (stack_t *stack);
 char *pop_end (stack_t *stack);
+
+void print_stack (stack_t *stack);
 void test ();
 /*********************************************/
 
@@ -63,10 +70,10 @@ command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
-	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
-	fprintf(stderr, "%s\n", stream);
-	free (stream);
-	fprintf(stderr, "----------------------------------\n");
+	// char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
+	// fprintf(stderr, "%s\n", stream);
+	// free (stream);
+	// fprintf(stderr, "----------------------------------\n");
 	test ();
   return 0;
 }
@@ -95,17 +102,38 @@ read_command_stream (command_stream_t s)
 /************ stack implementations ************/
 /***********************************************/
 
-void 
-print_stack (stack_t *stack)
+stack_t *
+create_stack ()
 {
-	node_t *current = stack->head;
-	fprintf(stderr, "======STACK======\n");
-	while (current != NULL)
+	stack_t *stack = malloc (sizeof(stack_t));
+	stack->size = 0;
+	stack->head = NULL;
+	stack->end = NULL;
+	return stack;
+}
+
+void
+destroy_stack (stack_t *stack)
+{
+	while (!is_empty (stack))
 	{
-		fprintf(stderr, "%s\n", current->val);
-		current = current->next;
+		char *val = pop_front (stack);
+		// free (val);
+		print_stack (stack);
 	}
-	fprintf(stderr, "=======END=======\n");
+	free (stack);
+}
+
+size_t
+size_of_stack (stack_t *stack)
+{
+	return stack->size;
+}
+
+int
+is_empty (stack_t *stack)
+{
+	return stack->size == 0;
 }
 
 /************ push end ************/
@@ -123,6 +151,7 @@ push_end (stack_t *stack, char *val)
 		stack->head->next = NULL;
 		stack->head->previous = NULL;
 		stack->end = stack->head;
+		stack->size++;
 		return;
 	}
 
@@ -133,6 +162,7 @@ push_end (stack_t *stack, char *val)
 	new_node->previous = stack->end;
 	new_node->previous->next = new_node;
 	stack->end = new_node;
+	stack->size++;
 	return;
 }
 
@@ -151,6 +181,7 @@ push_front (stack_t *stack, char *val)
 		stack->head->next = NULL;
 		stack->head->previous = NULL;
 		stack->end = stack->head;
+		stack->size++;
 		return;
 	}
 
@@ -161,6 +192,7 @@ push_front (stack_t *stack, char *val)
 	new_node->previous = NULL;
 	new_node->next->previous = new_node;
 	stack->head = new_node;
+	stack->size++;
 	return;
 }
 
@@ -192,6 +224,7 @@ pop_front (stack_t *stack)
 		current->next = NULL;
 	}
 	free (current);
+	stack->size--;
 	return word;
 }
 
@@ -223,17 +256,30 @@ pop_end (stack_t *stack)
 		current->previous = NULL;
 	}
 	free (current);
+	stack->size--;
 	return word;
 }
 
 /************ testing ************/
+
+void 
+print_stack (stack_t *stack)
+{
+	node_t *current = stack->head;
+	fprintf(stderr, "======STACK======\n");
+	fprintf(stderr, "SIZE: %d\n", (int)stack->size);
+	while (current != NULL)
+	{
+		fprintf(stderr, "%s\n", current->val);
+		current = current->next;
+	}
+	fprintf(stderr, "=======END=======\n");
+}
+
 void 
 test() 
 {
-	// initialization should be performed this way
-	stack_t *stack = malloc (sizeof(stack_t));
-	stack->head = NULL;
-	stack->end = NULL;
+	stack_t *stack = create_stack ();
 
 	push_end (stack, "cc");
 	print_stack (stack);
@@ -262,7 +308,7 @@ test()
 	fprintf(stderr, "popped: %s\n", (word = pop_front(stack)));
 	print_stack (stack);
 
-	free (stack);
+	destroy_stack (stack);
 	free (word);
 }
 
@@ -577,9 +623,47 @@ get_stream_from_input (int (*get_next_byte) (void *),
 	}
 
 	script[pos] = '\0';
-	free (buffer);
+	
 
-	return script;
+	// /************ transform newlines into ';'' ************/
+	// free (buffer);
+	// length = strlen (script);
+	// buffer = (char *) malloc (2*length);
+	// pos = 0;
+	// comment_flag = 0;
+	// for (i = 0; i < length; i++)
+	// {
+	// 	int cc = script[i];
+
+	// 	if (comment_flag)
+	// 	{
+	// 		if (cc != '\n')
+	// 		{
+	// 			buffer[pos] = cc;
+	// 			pos++;
+	// 			continue;
+	// 		}
+	// 		else
+	// 		{
+	// 			buffer[pos] = cc;
+	// 			pos++;
+	// 			comment_flag = 0;
+	// 			continue;
+	// 		}
+	// 		special_flag = 0;
+	// 	}
+
+	// 	if (cc == '#')
+	// 	{
+	// 		comment_flag = 1;
+	// 		buffer[pos] = cc;
+	// 		pos++;
+	// 		special_flag = 0;
+	// 	}
+	// }
+
+
+	return buffer ;
 }
 
 int
