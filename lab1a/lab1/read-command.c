@@ -14,9 +14,13 @@
 
 /************ node ************/
 typedef struct node_t {
-		char* val;
 		struct node_t * next;
 		struct node_t * previous;
+		union 
+		{
+			char *word;
+			command_t command;
+		};
 } node_t;
 
 /************ stack ************/
@@ -45,16 +49,23 @@ stack_t *create_stack ();
 void destroy_stack (stack_t *stack);
 size_t size_of_stack (stack_t *stack);
 int is_empty (stack_t *stack);
-void push_end (stack_t *stack, char *val);
-void push_front (stack_t *stack, char *val);
-char *pop_front (stack_t *stack);
-char *pop_end (stack_t *stack);
 
-void print_stack (stack_t *stack);
-void test_stack ();
+void push_end_word (stack_t *stack, char *val);
+void push_front_word (stack_t *stack, char *val);
+char *pop_front_word (stack_t *stack);
+char *pop_end_word (stack_t *stack);
+
+void push_end_command (stack_t *stack, command_t command);
+void push_front_command (stack_t *stack, command_t command);
+command_t pop_front_command (stack_t *stack);
+command_t pop_end_command (stack_t *stack);
+
+void print_stack_word (stack_t *stack);
+void print_stack_command (stack_t *stack);
+void test_stack_word ();
+void test_stack_command ();
+command_t get_command (enum command_type type);
 /*********************************************/
-
-
 
 
 
@@ -64,15 +75,17 @@ command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
-	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
-	fprintf(stderr, "%s\n", stream);
-	fprintf(stderr, "----------------------------------\n");
+	test_stack_command ();
+	test_stack_word ();
+	// char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
+	// fprintf(stderr, "%s\n", stream);
+	// fprintf(stderr, "----------------------------------\n");
 
 	// command_stream_t cs = malloc (sizeof (command_stream))
 	// cs->commands_list = create_stack ();
 	// cs->commands_list
 
-	free (stream);
+	// free (stream);
   return 0;
 }
 
@@ -81,8 +94,6 @@ read_command_stream (command_stream_t s)
 {
   return 0;
 }
-
-
 
 
 
@@ -106,9 +117,9 @@ destroy_stack (stack_t *stack)
 {
 	while (!is_empty (stack))
 	{
-		char *val = pop_front (stack);
+		char *val = pop_front_word (stack);
 		// free (val);
-		print_stack (stack);
+		print_stack_word (stack);
 	}
 	free (stack);
 }
@@ -125,9 +136,9 @@ is_empty (stack_t *stack)
 	return stack->size == 0;
 }
 
-/************ push end ************/
+/************ push end word ************/
 void 
-push_end (stack_t *stack, char *val)
+push_end_word (stack_t *stack, char *val)
 {
 	if (stack == NULL)
 		return;
@@ -136,7 +147,7 @@ push_end (stack_t *stack, char *val)
 	if (stack->head == NULL)
 	{
 		stack->head = malloc (sizeof(node_t));
-		stack->head->val = val;
+		stack->head->word = val;
 		stack->head->next = NULL;
 		stack->head->previous = NULL;
 		stack->end = stack->head;
@@ -146,7 +157,7 @@ push_end (stack_t *stack, char *val)
 
 	// when stack is not empty
 	node_t *new_node = malloc (sizeof(node_t));
-	new_node->val = val;
+	new_node->word = val;
 	new_node->next = NULL;
 	new_node->previous = stack->end;
 	new_node->previous->next = new_node;
@@ -155,9 +166,9 @@ push_end (stack_t *stack, char *val)
 	return;
 }
 
-/************ push front ************/
+/************ push front word ************/
 void 
-push_front (stack_t *stack, char *val)
+push_front_word (stack_t *stack, char *val)
 {
 	if (stack == NULL)
 		return;
@@ -166,7 +177,7 @@ push_front (stack_t *stack, char *val)
 	if (stack->head == NULL)
 	{
 		stack->head = malloc (sizeof(node_t));
-		stack->head->val = val;
+		stack->head->word = val;
 		stack->head->next = NULL;
 		stack->head->previous = NULL;
 		stack->end = stack->head;
@@ -176,7 +187,7 @@ push_front (stack_t *stack, char *val)
 
 	// when stack is not empty
 	node_t *new_node = malloc (sizeof(node_t));
-	new_node->val = val;
+	new_node->word = val;
 	new_node->next = stack->head;
 	new_node->previous = NULL;
 	new_node->next->previous = new_node;
@@ -185,9 +196,9 @@ push_front (stack_t *stack, char *val)
 	return;
 }
 
-/************ pop front ************/
+/************ pop front word ************/
 char *
-pop_front (stack_t *stack)
+pop_front_word (stack_t *stack)
 {
 	if (stack == NULL)
 		return NULL;
@@ -196,7 +207,7 @@ pop_front (stack_t *stack)
 		return NULL;
 
 	// when stack is not empty
-	char *word = stack->head->val;
+	char *word = stack->head->word;
 	node_t *current = stack->head;
 
 	// if there's only one node left
@@ -217,9 +228,9 @@ pop_front (stack_t *stack)
 	return word;
 }
 
-/************ pop end ************/
+/************ pop end word ************/
 char *
-pop_end (stack_t *stack)
+pop_end_word (stack_t *stack)
 {
 	if (stack == NULL)
 		return NULL;
@@ -228,7 +239,7 @@ pop_end (stack_t *stack)
 		return NULL;
 
 	// when stack is not empty
-	char *word = stack->end->val;
+	char *word = stack->end->word;
 	node_t *current = stack->end;
 
 	// if there's only one node left
@@ -249,56 +260,244 @@ pop_end (stack_t *stack)
 	return word;
 }
 
+/************ push end command ************/
+void 
+push_end_command (stack_t *stack, command_t val)
+{
+	if (stack == NULL)
+		return;
+	
+	// when stack is empty
+	if (stack->head == NULL)
+	{
+		stack->head = malloc (sizeof(node_t));
+		stack->head->command = val;
+		stack->head->next = NULL;
+		stack->head->previous = NULL;
+		stack->end = stack->head;
+		stack->size++;
+		return;
+	}
+
+	// when stack is not empty
+	node_t *new_node = malloc (sizeof(node_t));
+	new_node->command = val;
+	new_node->next = NULL;
+	new_node->previous = stack->end;
+	new_node->previous->next = new_node;
+	stack->end = new_node;
+	stack->size++;
+	return;
+}
+
+/************ push front command ************/
+void 
+push_front_command (stack_t *stack, command_t val)
+{
+	if (stack == NULL)
+		return;
+
+	// when stack is empty
+	if (stack->head == NULL)
+	{
+		stack->head = malloc (sizeof(node_t));
+		stack->head->command = val;
+		stack->head->next = NULL;
+		stack->head->previous = NULL;
+		stack->end = stack->head;
+		stack->size++;
+		return;
+	}
+
+	// when stack is not empty
+	node_t *new_node = malloc (sizeof(node_t));
+	new_node->command = val;
+	new_node->next = stack->head;
+	new_node->previous = NULL;
+	new_node->next->previous = new_node;
+	stack->head = new_node;
+	stack->size++;
+	return;
+}
+
+/************ pop front command ************/
+command_t
+pop_front_command (stack_t *stack)
+{
+	if (stack == NULL)
+		return NULL;
+	// when stack is empty
+	if (stack->head == NULL)
+		return NULL;
+
+	// when stack is not empty
+	command_t command = stack->head->command;
+	node_t *current = stack->head;
+
+	// if there's only one node left
+	if (current->next == NULL)
+	{
+		stack->head = NULL;
+		stack->end = NULL;
+	}
+	// if there's more than one node left
+	else
+	{
+		current->next->previous = NULL;
+		stack->head = current->next;
+		current->next = NULL;
+	}
+	free (current);
+	stack->size--;
+	return command;
+}
+
+/************ pop end command ************/
+command_t
+pop_end_command (stack_t *stack)
+{
+	if (stack == NULL)
+		return NULL;
+	// when stack is empty
+	if (stack->end == NULL)
+		return NULL;
+
+	// when stack is not empty
+	command_t command = stack->end->command;
+	node_t *current = stack->end;
+
+	// if there's only one node left
+	if (current->previous == NULL)
+	{
+		stack->head = NULL;
+		stack->end = NULL;
+	}
+	// if there's more than one node left
+	else
+	{
+		current->previous->next = NULL;
+		stack->end = current->previous;
+		current->previous = NULL;
+	}
+	free (current);
+	stack->size--;
+	return command;
+}
+
 /************ testing ************/
 
 void 
-print_stack (stack_t *stack)
+print_stack_word (stack_t *stack)
 {
 	node_t *current = stack->head;
 	fprintf(stderr, "======STACK======\n");
 	fprintf(stderr, "SIZE: %d\n", (int)stack->size);
 	while (current != NULL)
 	{
-		fprintf(stderr, "%s\n", current->val);
+		fprintf(stderr, "%s\n", current->word);
 		current = current->next;
 	}
 	fprintf(stderr, "=======END=======\n");
 }
 
 void 
-test_stack () 
+print_stack_command (stack_t *stack)
+{
+	node_t *current = stack->head;
+	fprintf(stderr, "======STACK======\n");
+	fprintf(stderr, "SIZE: %d\n", (int)stack->size);
+	while (current != NULL)
+	{
+		fprintf(stderr, "%d\n", (int)current->command->type);
+		current = current->next;
+	}
+	fprintf(stderr, "=======END=======\n");
+}
+
+void 
+test_stack_word () 
 {
 	stack_t *stack = create_stack ();
 
-	push_end (stack, "cc");
-	print_stack (stack);
-	push_end (stack, "aa");
-	print_stack (stack);
-	push_front (stack, "bb");
-	print_stack (stack);
-	push_end (stack, "gg");
-	print_stack (stack);
-	push_front (stack, "fuck This!!!");
-	print_stack (stack);
+	push_end_word (stack, "cc");
+	print_stack_word (stack);
+	push_end_word (stack, "aa");
+	print_stack_word (stack);
+	push_front_word (stack, "bb");
+	print_stack_word (stack);
+	push_end_word (stack, "gg");
+	print_stack_word (stack);
+	push_front_word (stack, "fuck This!!!");
+	print_stack_word (stack);
 	
 	char *word = NULL;
-	fprintf(stderr, "popped: %s\n", (word = pop_front(stack)));
-	print_stack (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_end(stack)));
-	print_stack (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_end(stack)));
-	print_stack (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_front(stack)));
-	print_stack (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_front(stack)));
-	print_stack (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_end(stack)));
-	print_stack (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_front(stack)));
-	print_stack (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_front_word(stack)));
+	print_stack_word (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_end_word(stack)));
+	print_stack_word (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_end_word(stack)));
+	print_stack_word (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_front_word(stack)));
+	print_stack_word (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_front_word(stack)));
+	print_stack_word (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_end_word(stack)));
+	print_stack_word (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_front_word(stack)));
+	print_stack_word (stack);
 
 	destroy_stack (stack);
 	free (word);
+}
+
+void
+test_stack_command ()
+{
+	stack_t *stack = create_stack ();
+
+	push_front_command (stack, get_command (AND_COMMAND));
+	print_stack_command (stack);
+	push_front_command (stack, get_command (OR_COMMAND));
+	print_stack_command (stack);
+	push_front_command (stack, get_command (SUBSHELL_COMMAND));
+	print_stack_command (stack);
+	push_front_command (stack, get_command (SIMPLE_COMMAND));
+	print_stack_command (stack);
+
+	command_t c = NULL;
+	c = pop_front_command (stack);
+	print_stack_command (stack);
+	free (c);
+	c = pop_front_command (stack);
+	print_stack_command (stack);
+	free (c);
+	c = pop_front_command (stack);
+	print_stack_command (stack);
+	free (c);
+	c = pop_front_command (stack);
+	print_stack_command (stack);
+	free (c);
+	c = pop_front_command (stack);
+	print_stack_command (stack);
+	free (c);
+	c = pop_front_command (stack);
+	print_stack_command (stack);
+	free (c);
+	c = pop_front_command (stack);
+	print_stack_command (stack);
+	free (c);
+	c = pop_front_command (stack);
+	print_stack_command (stack);
+	free (c);
+
+	destroy_stack (stack);
+}
+
+command_t get_command (enum command_type type)
+{
+	command_t c = malloc(sizeof(struct command));
+	c->type = type;
+	return c;
 }
 
 /*************************************/
