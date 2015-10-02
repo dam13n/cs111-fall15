@@ -37,12 +37,13 @@ int is_special (int c);
 
 char *get_stream_from_input (int (*get_next_byte) (void *), 
 	void *get_next_byte_argument);
+void test_stream (int (*get_next_byte) (void *), 
+	void *get_next_byte_argument);
 
 
 /************** stack functions **************/
 stack_t *create_stack ();
 void destroy_stack (stack_t *stack);
-
 size_t size_of_stack (stack_t *stack);
 int is_empty (stack_t *stack);
 void push_end (stack_t *stack, char *val);
@@ -51,7 +52,7 @@ char *pop_front (stack_t *stack);
 char *pop_end (stack_t *stack);
 
 void print_stack (stack_t *stack);
-void test ();
+void test_stack ();
 /*********************************************/
 
 
@@ -70,11 +71,9 @@ command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
-	// char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
-	// fprintf(stderr, "%s\n", stream);
-	// free (stream);
-	// fprintf(stderr, "----------------------------------\n");
-	test ();
+	test_stream (get_next_byte, get_next_byte_argument);
+	fprintf(stderr, "----------------------------------\n");
+	test_stack ();
   return 0;
 }
 
@@ -277,7 +276,7 @@ print_stack (stack_t *stack)
 }
 
 void 
-test() 
+test_stack () 
 {
 	stack_t *stack = create_stack ();
 
@@ -625,43 +624,53 @@ get_stream_from_input (int (*get_next_byte) (void *),
 	script[pos] = '\0';
 	
 
-	// /************ transform newlines into ';'' ************/
-	// free (buffer);
-	// length = strlen (script);
-	// buffer = (char *) malloc (2*length);
-	// pos = 0;
-	// comment_flag = 0;
-	// for (i = 0; i < length; i++)
-	// {
-	// 	int cc = script[i];
+	/************ transform newlines into ';'' ************/
+	free (buffer);
+	length = strlen (script);
+	buffer = (char *) malloc (2*length);
+	pos = 0;
+	comment_flag = 0;
+	for (i = 0; i < length; i++)
+	{
+		int cc = script[i];
 
-	// 	if (comment_flag)
-	// 	{
-	// 		if (cc != '\n')
-	// 		{
-	// 			buffer[pos] = cc;
-	// 			pos++;
-	// 			continue;
-	// 		}
-	// 		else
-	// 		{
-	// 			buffer[pos] = cc;
-	// 			pos++;
-	// 			comment_flag = 0;
-	// 			continue;
-	// 		}
-	// 		special_flag = 0;
-	// 	}
+		if (comment_flag)
+		{
+			if (cc != '\n')
+			{
+				continue;
+			}
+			else
+			{
+				comment_flag = 0;
+				continue;
+			}
+		}
 
-	// 	if (cc == '#')
-	// 	{
-	// 		comment_flag = 1;
-	// 		buffer[pos] = cc;
-	// 		pos++;
-	// 		special_flag = 0;
-	// 	}
-	// }
+		if (cc == '#')
+		{
+			comment_flag = 1;
+		}
 
+		else if (cc == '\n')
+		{
+			buffer[pos] = ' ';
+			pos++;
+			buffer[pos] = ';';
+			pos++;
+			buffer[pos] = ' ';
+			pos++;
+		}
+
+		else
+		{
+			buffer[pos] = cc;
+			pos++;
+		}
+	}
+
+	buffer[pos] = '\0';
+	free (script);
 
 	return buffer ;
 }
@@ -712,4 +721,13 @@ is_special (int c)
 	}
 
 	return 0;
+}
+
+void
+test_stream (int (*get_next_byte) (void *), 
+	void *get_next_byte_argument)
+{
+	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
+	fprintf(stderr, "%s\n", stream);
+	free (stream);
 }
