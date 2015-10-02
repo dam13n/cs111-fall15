@@ -14,9 +14,9 @@
 
 /************ node ************/
 typedef struct node_t {
-    char* val;
-    struct node_t * next;
-    struct node_t * previous;
+		char* val;
+		struct node_t * next;
+		struct node_t * previous;
 } node_t;
 
 /************ stack ************/
@@ -28,8 +28,7 @@ typedef struct stack_t {
 
 struct command_stream
 {
- 	//struct command_t *commands;
-  node_t nodes[100];
+	stack_t *commands_list;
 };
 
 int is_valid (int c);
@@ -61,19 +60,19 @@ void test_stack ();
 
 
 
-
-
-
-
-
-
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
-	test_stream (get_next_byte, get_next_byte_argument);
+	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
+	fprintf(stderr, "%s\n", stream);
 	fprintf(stderr, "----------------------------------\n");
-	test_stack ();
+
+	// command_stream_t cs = malloc (sizeof (command_stream))
+	// cs->commands_list = create_stack ();
+	// cs->commands_list
+
+	free (stream);
   return 0;
 }
 
@@ -82,15 +81,6 @@ read_command_stream (command_stream_t s)
 {
   return 0;
 }
-
-
-
-
-
-
-
-
-
 
 
 
