@@ -11,6 +11,20 @@
 
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
+
+/************ node ************/
+typedef struct node_t {
+    char* val;
+    struct node_t * next;
+    struct node_t * previous;
+} node_t;
+
+/************ stack ************/
+typedef struct stack_t {
+	node_t *head;
+	node_t *end;
+} stack_t;
+
 struct command_stream
 {
  	//struct command_t *commands;
@@ -22,139 +36,28 @@ int is_special (int c);
 
 char *get_stream_from_input (int (*get_next_byte) (void *), 
 	void *get_next_byte_argument);
- 
-
-/************ linked list implementations ************/
 
 
-/************ node ************/
-
-typedef struct node_t {
-    char* val;
-    struct node_t * next;
-    struct node_t * previous;
-} node_t;
-
-
-/************ functions ************/
-void print_list(node_t * head) {
-    node_t * current = head;
-    
-    while (current != NULL) {
-        printf("%s\n", current->val);
-        current = current->next;
-    }
-}
-
-// push end
-void push_end(node_t ** head, char* val) {
-    
-    if((*head) == NULL) {
-        (*head) = malloc(sizeof(node_t));
-        (*head)->val = malloc(strlen(val+1));
-        strcpy((*head)->val, val);
-        (*head)->next = NULL;
-        (*head)->previous = NULL;
-        return;
-    }
-    
-    node_t * current = *head;
-    while (current->next != NULL) {
-        current = current->next;
-    }
-    current->next = malloc(sizeof(node_t));
-    current->next->val = malloc(strlen(val+1));
-    strcpy(current->next->val, val);
-    current->next->next = NULL;
-    current->next->previous = current;
-    return;
-}
-
-// push front
-void push_front(node_t ** head, char* val) {
-    
-    if((*head) == NULL) {
-        (*head) = malloc(sizeof(node_t));
-        (*head)->val = malloc(strlen(val+1));
-        strcpy((*head)->val, val);
-        (*head)->next = NULL;
-        (*head)->previous = NULL;
-        return;
-    }
-    
-    node_t * extraNode;
-    extraNode = malloc(sizeof(node_t));
-    extraNode->val = malloc(strlen(val+1));
-    strcpy(extraNode->val, val);
-    extraNode->next = *head;
-    extraNode->next->previous = extraNode;
-    extraNode->previous = NULL;
-    *head = extraNode;
-    return;
-}
+/************** stack functions **************/
+void print_stack (stack_t *stack);
+void push_end (stack_t *stack, char *val);
+void push_front (stack_t *stack, char *val);
+char *pop_front (stack_t *stack);
+char *pop_end (stack_t *stack);
+void test ();
+/*********************************************/
 
 
-// pop front
-void pop_front(node_t ** head) {
-    if (*head == NULL) {
-        return;
-    }
-    node_t * nextNode = NULL;
-    nextNode = (*head)->next;
-    if(nextNode!=NULL){
-        nextNode->previous = NULL;
-    }
-    free((*head)->val);
-    free(*head);
-    *head = nextNode;
-}
-
-// pop end
-void pop_end(node_t ** head) {
-    if (*head == NULL){
-        return;
-    }
-    if ((*head)->next == NULL) {
-        free(*head);
-        *head = NULL;
-        return;
-    }
-    
-    node_t * current = *head;
-    
-    while (current->next->next != NULL) {
-        current = current->next;
-    }
-    free(current->next);
-    current->next = NULL;
-    return;
-}
 
 
-/////////////////// Xcode Debugging ////////////////////////////
-// int main(int argc, const char * argv[]) {
-//     // insert code here...
-//     node_t * head = NULL;
-//     pushFront(&head, "c");
-//     //pushEnd(&head, "ddd");
-//     pushFront(&head, "bb");
-//     pushFront(&head, "a");
-//     pushEnd(&head, "e");
-//     popEnd(&head);
-//     popFront(&head);
-//     popFront(&head);
-//     popFront(&head);
-//     popFront(&head);
-//     popFront(&head);
-//     popEnd(&head);
-//     print_list(head);
 
-    
-    
-//     return 0;
-// }
 
-/*************************************/
+
+
+
+
+
+
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
@@ -162,6 +65,9 @@ make_command_stream (int (*get_next_byte) (void *),
 {
 	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
 	fprintf(stderr, "%s\n", stream);
+	free (stream);
+	fprintf(stderr, "----------------------------------\n");
+	test ();
   return 0;
 }
 
@@ -171,11 +77,205 @@ read_command_stream (command_stream_t s)
   return 0;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/************ stack implementations ************/
+/***********************************************/
+
+void 
+print_stack (stack_t *stack)
+{
+	node_t *current = stack->head;
+	fprintf(stderr, "======STACK======\n");
+	while (current != NULL)
+	{
+		fprintf(stderr, "%s\n", current->val);
+		current = current->next;
+	}
+	fprintf(stderr, "=======END=======\n");
+}
+
+/************ push end ************/
+void 
+push_end (stack_t *stack, char *val)
+{
+	if (stack == NULL)
+		return;
+	
+	// when stack is empty
+	if (stack->head == NULL)
+	{
+		stack->head = malloc (sizeof(node_t));
+		stack->head->val = val;
+		stack->head->next = NULL;
+		stack->head->previous = NULL;
+		stack->end = stack->head;
+		return;
+	}
+
+	// when stack is not empty
+	node_t *new_node = malloc (sizeof(node_t));
+	new_node->val = val;
+	new_node->next = NULL;
+	new_node->previous = stack->end;
+	new_node->previous->next = new_node;
+	stack->end = new_node;
+	return;
+}
+
+/************ push front ************/
+void 
+push_front (stack_t *stack, char *val)
+{
+	if (stack == NULL)
+		return;
+
+	// when stack is empty
+	if (stack->head == NULL)
+	{
+		stack->head = malloc (sizeof(node_t));
+		stack->head->val = val;
+		stack->head->next = NULL;
+		stack->head->previous = NULL;
+		stack->end = stack->head;
+		return;
+	}
+
+	// when stack is not empty
+	node_t *new_node = malloc (sizeof(node_t));
+	new_node->val = val;
+	new_node->next = stack->head;
+	new_node->previous = NULL;
+	new_node->next->previous = new_node;
+	stack->head = new_node;
+	return;
+}
+
+/************ pop front ************/
+char *
+pop_front (stack_t *stack)
+{
+	if (stack == NULL)
+		return NULL;
+	// when stack is empty
+	if (stack->head == NULL)
+		return NULL;
+
+	// when stack is not empty
+	char *word = stack->head->val;
+	node_t *current = stack->head;
+
+	// if there's only one node left
+	if (current->next == NULL)
+	{
+		stack->head = NULL;
+		stack->end = NULL;
+	}
+	// if there's more than one node left
+	else
+	{
+		current->next->previous = NULL;
+		stack->head = current->next;
+		current->next = NULL;
+	}
+	free (current);
+	return word;
+}
+
+/************ pop end ************/
+char *
+pop_end (stack_t *stack)
+{
+	if (stack == NULL)
+		return NULL;
+	// when stack is empty
+	if (stack->end == NULL)
+		return NULL;
+
+	// when stack is not empty
+	char *word = stack->end->val;
+	node_t *current = stack->end;
+
+	// if there's only one node left
+	if (current->previous == NULL)
+	{
+		stack->head = NULL;
+		stack->end = NULL;
+	}
+	// if there's more than one node left
+	else
+	{
+		current->previous->next = NULL;
+		stack->end = current->previous;
+		current->previous = NULL;
+	}
+	free (current);
+	return word;
+}
+
+/************ testing ************/
+void 
+test() 
+{
+	// initialization should be performed this way
+	stack_t *stack = malloc (sizeof(stack_t));
+	stack->head = NULL;
+	stack->end = NULL;
+
+	push_end (stack, "cc");
+	print_stack (stack);
+	push_end (stack, "aa");
+	print_stack (stack);
+	push_front (stack, "bb");
+	print_stack (stack);
+	push_end (stack, "gg");
+	print_stack (stack);
+	push_front (stack, "fuck This!!!");
+	print_stack (stack);
+	
+	char *word = NULL;
+	fprintf(stderr, "popped: %s\n", (word = pop_front(stack)));
+	print_stack (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_end(stack)));
+	print_stack (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_end(stack)));
+	print_stack (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_front(stack)));
+	print_stack (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_front(stack)));
+	print_stack (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_end(stack)));
+	print_stack (stack);
+	fprintf(stderr, "popped: %s\n", (word = pop_front(stack)));
+	print_stack (stack);
+
+	free (stack);
+	free (word);
+}
+
 /*************************************/
+/*************************************/
+
+
+
 /************** helpers **************/
 /*************************************/
 
-char *get_stream_from_input (int (*get_next_byte) (void *), 
+char *
+get_stream_from_input (int (*get_next_byte) (void *), 
 	void *get_next_byte_argument)
 {
 	FILE *stream;
