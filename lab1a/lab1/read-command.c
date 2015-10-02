@@ -13,7 +13,8 @@
    complete the incomplete type declaration in command.h.  */
 struct command_stream
 {
-
+ 	//struct command_t *commands;
+  node_t nodes[100];
 };
 
 int is_valid (int c);
@@ -21,6 +22,139 @@ int is_special (int c);
 
 char *get_stream_from_input (int (*get_next_byte) (void *), 
 	void *get_next_byte_argument);
+ 
+
+/************ linked list implementations ************/
+
+
+/************ node ************/
+
+typedef struct node_t {
+    char* val;
+    struct node_t * next;
+    struct node_t * previous;
+} node_t;
+
+
+/************ functions ************/
+void print_list(node_t * head) {
+    node_t * current = head;
+    
+    while (current != NULL) {
+        printf("%s\n", current->val);
+        current = current->next;
+    }
+}
+
+// push end
+void push_end(node_t ** head, char* val) {
+    
+    if((*head) == NULL) {
+        (*head) = malloc(sizeof(node_t));
+        (*head)->val = malloc(strlen(val+1));
+        strcpy((*head)->val, val);
+        (*head)->next = NULL;
+        (*head)->previous = NULL;
+        return;
+    }
+    
+    node_t * current = *head;
+    while (current->next != NULL) {
+        current = current->next;
+    }
+    current->next = malloc(sizeof(node_t));
+    current->next->val = malloc(strlen(val+1));
+    strcpy(current->next->val, val);
+    current->next->next = NULL;
+    current->next->previous = current;
+    return;
+}
+
+// push front
+void push_front(node_t ** head, char* val) {
+    
+    if((*head) == NULL) {
+        (*head) = malloc(sizeof(node_t));
+        (*head)->val = malloc(strlen(val+1));
+        strcpy((*head)->val, val);
+        (*head)->next = NULL;
+        (*head)->previous = NULL;
+        return;
+    }
+    
+    node_t * extraNode;
+    extraNode = malloc(sizeof(node_t));
+    extraNode->val = malloc(strlen(val+1));
+    strcpy(extraNode->val, val);
+    extraNode->next = *head;
+    extraNode->next->previous = extraNode;
+    extraNode->previous = NULL;
+    *head = extraNode;
+    return;
+}
+
+
+// pop front
+void pop_front(node_t ** head) {
+    if (*head == NULL) {
+        return;
+    }
+    node_t * nextNode = NULL;
+    nextNode = (*head)->next;
+    if(nextNode!=NULL){
+        nextNode->previous = NULL;
+    }
+    free((*head)->val);
+    free(*head);
+    *head = nextNode;
+}
+
+// pop end
+void pop_end(node_t ** head) {
+    if (*head == NULL){
+        return;
+    }
+    if ((*head)->next == NULL) {
+        free(*head);
+        *head = NULL;
+        return;
+    }
+    
+    node_t * current = *head;
+    
+    while (current->next->next != NULL) {
+        current = current->next;
+    }
+    free(current->next);
+    current->next = NULL;
+    return;
+}
+
+
+/////////////////// Xcode Debugging ////////////////////////////
+// int main(int argc, const char * argv[]) {
+//     // insert code here...
+//     node_t * head = NULL;
+//     pushFront(&head, "c");
+//     //pushEnd(&head, "ddd");
+//     pushFront(&head, "bb");
+//     pushFront(&head, "a");
+//     pushEnd(&head, "e");
+//     popEnd(&head);
+//     popFront(&head);
+//     popFront(&head);
+//     popFront(&head);
+//     popFront(&head);
+//     popFront(&head);
+//     popEnd(&head);
+//     print_list(head);
+
+    
+    
+//     return 0;
+// }
+
+/*************************************/
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
