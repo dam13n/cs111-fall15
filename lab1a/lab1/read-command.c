@@ -24,10 +24,10 @@ char *get_stream_from_input (int (*get_next_byte) (void *),
 	void *get_next_byte_argument);
  
 
-///////////////////////////////////Linked list implementations////////////////////////////
+/************ linked list implementations ************/
 
 
-///////////////////////////// Node //////////////////////////////////////
+/************ node ************/
 
 typedef struct node_t {
     char* val;
@@ -36,8 +36,7 @@ typedef struct node_t {
 } node_t;
 
 
-
-//////////////////////// Functions //////////////////////////////////////
+/************ functions ************/
 void print_list(node_t * head) {
     node_t * current = head;
     
@@ -47,10 +46,10 @@ void print_list(node_t * head) {
     }
 }
 
-//push end
-void pushEnd(node_t ** head, char* val) {
+// push end
+void push_end(node_t ** head, char* val) {
     
-    if((*head) == NULL){
+    if((*head) == NULL) {
         (*head) = malloc(sizeof(node_t));
         (*head)->val = malloc(strlen(val+1));
         strcpy((*head)->val, val);
@@ -71,10 +70,10 @@ void pushEnd(node_t ** head, char* val) {
     return;
 }
 
-//push front
-void pushFront(node_t ** head, char* val) {
+// push front
+void push_front(node_t ** head, char* val) {
     
-    if((*head) == NULL){
+    if((*head) == NULL) {
         (*head) = malloc(sizeof(node_t));
         (*head)->val = malloc(strlen(val+1));
         strcpy((*head)->val, val);
@@ -95,8 +94,8 @@ void pushFront(node_t ** head, char* val) {
 }
 
 
-//pop front
-void popFront(node_t ** head) {
+// pop front
+void pop_front(node_t ** head) {
     if (*head == NULL) {
         return;
     }
@@ -110,9 +109,8 @@ void popFront(node_t ** head) {
     *head = nextNode;
 }
 
-//pop end
-
-void popEnd(node_t ** head) {
+// pop end
+void pop_end(node_t ** head) {
     if (*head == NULL){
         return;
     }
@@ -156,9 +154,7 @@ void popEnd(node_t ** head) {
 //     return 0;
 // }
 
-
-
-//////////////////////////////////////////////////////////////////////////////////////////
+/*************************************/
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
