@@ -9,9 +9,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-/* FIXME: Define the type 'struct command_stream' here.  This should
-   complete the incomplete type declaration in command.h.  */
-
 /************ node ************/
 typedef struct node_t {
 		struct node_t * next;
