@@ -32,7 +32,7 @@ typedef struct stack_t {
 
 struct command_stream
 {
-	stack_t *commands_list;
+	stack_t *commands_list; // contains command_t
 };
 
 int is_valid (int c);
@@ -75,11 +75,11 @@ command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
-	test_stack_command ();
-	test_stack_word ();
-	// char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
-	// fprintf(stderr, "%s\n", stream);
-	// fprintf(stderr, "----------------------------------\n");
+	// test_stack_command ();
+	// test_stack_word ();
+	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
+	fprintf(stderr, "%s\n", stream);
+	fprintf(stderr, "----------------------------------\n");
 
 	// command_stream_t cs = malloc (sizeof (command_stream))
 	// cs->commands_list = create_stack ();
@@ -92,7 +92,10 @@ make_command_stream (int (*get_next_byte) (void *),
 command_t
 read_command_stream (command_stream_t s)
 {
-  return 0;
+	command_t c = NULL;
+	if (!is_empty (s->commands_list))
+		c = pop_front_command (s->commands_list);
+  return c;
 }
 
 
