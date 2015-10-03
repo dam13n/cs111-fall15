@@ -67,12 +67,6 @@ command_t get_command (enum command_type type);
 
 
 
-
-<<<<<<< HEAD
-
-
-=======
->>>>>>> peter
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
@@ -104,12 +98,6 @@ read_command_stream (command_stream_t s)
 
 
 
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> peter
 /************ stack implementations ************/
 /***********************************************/
 
