@@ -49,10 +49,102 @@ struct command_stream
   node_t nodes[100];
 };
 
-///////////////////////////////////Linked list implementations////////////////////////////
-
 
 ///////////////////////////// Node //////////////////////////////////////
+
+int main(){
+
+
+	//Creates the two stack for processing
+	stack_t *operandStack = create_stack();
+	stack_t *operatorStack = create_stack();
+
+	//Start reading from the commandStream
+	command_t a = read_command_stream (commandStream);
+
+	//Continue reading until the end of the command stream
+	while(a!=NULL){
+		
+		//If encounters a new regular command
+		if(a->type != SIMPLE_COMMAND && a->type != SUBSHELL_COMMAND){
+			//Push the first operand on the operand stack
+			push_front_command(operandStack, a->command[0]);
+
+			//If the operator stack is empty, push operator on to operator stack
+			if(is_empty(*operatorStack == NULL)){
+				push_front_word(operatorStack, operatorInString(a->type));
+			}
+
+			//Else ...
+			else{
+				//Get the top operator
+				char* operatorTop = pop_front_word(operatorStack);
+				push_front_word (operatorStack, operatorTop);
+
+				//While the top of the stack is not "(" and precedence new operator <= top operator
+				while(operatorTop != "(" &&  (strcmp(operatorInString(a->type), operatorTop)<=0)){
+
+					//Pop new operator and remake new first and second commands
+					char* newOperator = pop_front_word(operatorStack);
+					command_t second_command = operandStack.pop_front_command;
+					command_t first_command = operandStack.pop_front_command;
+
+					//Combine the two command into a new command
+					command_t newCommand = malloc(sizeof(command_t));
+					newCommand->type = operatorInEnum(newOperator);
+					newCommand->u[0] = first_command;
+					newCommand->u[2] = second_command;
+					free(first_command);
+					free(second_command);
+
+					//Add the new command into the operand stack
+					push_front_command(operandStack, newCommand);
+
+					//!!!!!!!!!!not sure if we can push null back on
+					//Maybe we need a peek or top function?
+					operatorTop = pop_front_word(operatorStack);
+					push_front_word (operatorStack, operatorTop);
+					if(operatorTop = NULL){
+						break;
+					}
+				}
+				push_front_word(operatorStack, operatorInString(a->type));
+			}
+		}
+
+	}
+}
+	
+
+/******************* Get the operator back in string *********************/
+char* operatorInString(command_type commands){
+	switch(commands){
+    case AND_COMMAND:
+    	return "&&";     
+    case SEQUENCE_COMMAND:    
+    	return ";";
+    case OR_COMMAND:
+    	return "||";
+    case PIPE_COMMAND:
+    	return "|";      
+    }
+  }
+
+command_type operatorInEnum(char* commands){
+	switch(commands){
+		case "&&":
+			return AND_COMMAND;
+		case ";":
+			return SEQUENCE_COMMAND;
+		case "||":
+			return OR_COMMAND;
+		case "|":
+			return PIPE_COMMAND;
+	}
+}
+
+
+
 
 typedef struct node_t {
     char* val;
