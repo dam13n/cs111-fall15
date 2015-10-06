@@ -84,38 +84,40 @@ make_command_stream (int (*get_next_byte) (void *),
 {
 	// test_stack_command ();
 	// test_stack_word ();
+
 	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
 	fprintf(stderr, "%s\n", stream);
 	fprintf(stderr, "----------------------------------\n");
 
-	// command_stream_t cs = malloc (sizeof (command_stream))
-	// cs->commands_list = create_stack ();
-	// cs->commands_list
+	command_stream_t cs = malloc (sizeof (struct command_stream));
+	cs->commands_list = create_stack ();
 
-	// free (stream);
-  return 0;
+	free (stream);
+  return cs;
 }
 
 command_t
 read_command_stream (command_stream_t s)
 {
-	// command_t c = NULL;
-	// if (!is_empty (s->commands_list))
-	// 	c = pop_front_command (s->commands_list);
-	command_t c = malloc (sizeof(struct command));
-	c->type = SIMPLE_COMMAND;
-	c->input = "file.c";
-	c->output = "results.txt";
-	char **command_s = malloc(2*sizeof(char *));
-	*command_s = malloc(strlen("cat")+1);
-	strcpy (*command_s, "cat");
-	*(command_s+1) = malloc(strlen("true")+1);
-	strcpy (*command_s, "true");
-	
-	c->u.word = command_s;
-	// fprintf(stderr, "%s\n", *command_s);
-	// fprintf(stderr, "%s\n", *(command_s+1));
+	command_t c = NULL;
+	if (!is_empty (s->commands_list))
+		c = pop_front_command (s->commands_list);
   return c;
+  
+  // command_t c = malloc (sizeof(struct command));
+  // c->type = SIMPLE_COMMAND;
+  // c->input = "file.c";
+  // c->output = "results.txt";
+  // char **command_s = malloc(2*sizeof(char *));
+  // *command_s = malloc(strlen("cat")+1);
+  // strcpy (*command_s, "cat");
+  // *(command_s+1) = malloc(strlen("true")+1);
+  // strcpy (*(command_s+1), "true");
+
+  // returned = 1;
+
+  // c->u.word = command_s;
+  // return c;
 }
 
 
