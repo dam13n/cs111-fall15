@@ -9,15 +9,25 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+/************ types of tokens ************/
+typedef enum token_type
+{
+	TOKEN_TYPE_AND,
+	TOKEN_TYPE_OR,
+	TOKEN_TYPE_PIPE,
+	TOKEN_TYPE_
+} token_type;
+
 /************ node ************/
-typedef struct node_t {
-		struct node_t * next;
-		struct node_t * previous;
-		union 
-		{
-			char *word;
-			command_t command;
-		};
+typedef struct node_t 
+{
+	struct node_t * next;
+	struct node_t * previous;
+	union 
+	{
+		char *word;
+		command_t command;
+	};
 } node_t;
 
 /************ stack ************/
@@ -89,9 +99,22 @@ make_command_stream (int (*get_next_byte) (void *),
 command_t
 read_command_stream (command_stream_t s)
 {
-	command_t c = NULL;
-	if (!is_empty (s->commands_list))
-		c = pop_front_command (s->commands_list);
+	// command_t c = NULL;
+	// if (!is_empty (s->commands_list))
+	// 	c = pop_front_command (s->commands_list);
+	command_t c = malloc (sizeof(struct command));
+	c->type = SIMPLE_COMMAND;
+	c->input = "file.c";
+	c->output = "results.txt";
+	char **command_s = malloc(2*sizeof(char *));
+	*command_s = malloc(strlen("cat")+1);
+	strcpy (*command_s, "cat");
+	*(command_s+1) = malloc(strlen("true")+1);
+	strcpy (*command_s, "true");
+	
+	c->u.word = command_s;
+	// fprintf(stderr, "%s\n", *command_s);
+	// fprintf(stderr, "%s\n", *(command_s+1));
   return c;
 }
 
