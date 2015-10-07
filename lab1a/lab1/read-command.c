@@ -42,9 +42,12 @@ struct command_stream
 	stack_t *commands_list; // contains command_t
 };
 
+/***************** helper functions *****************/
 int is_valid (int c);
 int is_special (int c);
 int is_operator (char *word);
+int is_io_redir (char *word);
+int get_precedence (char *word);
 
 char *get_stream_from_input (int (*get_next_byte) (void *), 
 	void *get_next_byte_argument);
@@ -58,6 +61,7 @@ void destroy_stack (stack_t *stack);
 size_t size_of_stack (stack_t *stack);
 int is_empty (stack_t *stack);
 
+char *get_top_word (stack_t *stack);
 void push_end_word (stack_t *stack, char *val);
 void push_front_word (stack_t *stack, char *val);
 char *pop_front_word (stack_t *stack);
@@ -119,63 +123,71 @@ make_command_stream (int (*get_next_byte) (void *),
       strcpy (word, buffer);
       push_end_word (word_stack, word);
 
-      // fprintf(stderr, "%s\n", buffer);
       free (buffer);
       buffer_stream = open_memstream (&buffer, &size);
     }
   }
-
-  // print_stack_word (word_stack);
 
 
 
   stack_t *command_stack = create_stack ();
   stack_t *operator_stack = create_stack ();
 
+  int input_flag = 0;
+  int output_flag = 0;
+
   char *stack_word = NULL;
   while (!is_empty (word_stack))
   {
     stack_word = pop_front_word (word_stack);
     // fprintf(stderr, "%s\n", stack_word);
-    if (!is_operator(stack_word))
+    if (input_flag || output_flag)
+    {
+      command_t c = pop_front_command (command_stack);
+      if (input_flag)
+      {
+        c->input = malloc(strlen(stack_word)+1);
+        strcpy(c->input, stack_word);
+        input_flag = 0;
+      }
+      else
+      {
+        c->output = malloc(strlen(stack_word)+1);
+        strcpy(c->output, stack_word);
+        output_flag = 0;
+      }
+      push_front_command (command_stack, c);
+    }
+
+    else if (!is_operator(stack_word) && strcmp (stack_word, ";")
+      && !is_io_redir (stack_word))
     {
       if (!is_empty (command_stack))
       {
         command_t top = pop_front_command (command_stack);
-        // fprintf(stderr, "got here 1\n");
         if (top->type == SIMPLE_COMMAND)
         {
           int count = 0;
-          // fprintf(stderr, "got here 2\n");
           char **word = top->u.word;
-          while (*(word+count) != NULL)
+          while (*word)
           {
-            // fprintf(stderr, "%d\n", count);
+            word++;
             count++;
-            // word++;
           }
-          // fprintf(stderr, "got here 3\n");
-          // fprintf(stderr, "%d\n", count);
-          fprintf(stderr, "COUNT %d\n", count);
-          fprintf(stderr, "SIZE %d\n", (int) ((count+1)*sizeof(char *)));
+
           char **command_s = malloc( (count+1)*sizeof(char *) );
-          fprintf(stderr, "%d, %d\n", (int)sizeof(command_s), (int)sizeof(char *));
-          fprintf(stderr, "COUNT %d\n", count);
           int pos = 0;
           for (; pos < count; pos++)
           {
             *(command_s+pos) = malloc(strlen( top->u.word[pos] ) +1 );
             strcpy (*(command_s+pos), top->u.word[pos]);
-            // fprintf(stderr, "%d\n", pos);
           }
           *(command_s+pos) = malloc(strlen(stack_word)+1);
           strcpy (*(command_s+pos), stack_word);
+          *(command_s+pos+1) = NULL;
 
           top->u.word = command_s;
           push_front_command (command_stack, top);
-
-          // print_stack_command (command_stack);
-
         }
         else
         {
@@ -186,18 +198,136 @@ make_command_stream (int (*get_next_byte) (void *),
       {
         command_t c = malloc (sizeof(struct command));
         c->type = SIMPLE_COMMAND;
-        char **command_s = malloc(sizeof(char *));
+        c->input = NULL;
+        c->output = NULL;
+        char **command_s = malloc(2 * sizeof(char *));
         *command_s = malloc(strlen(stack_word)+1);
         strcpy (*command_s, stack_word);
+        *(command_s+1) = NULL;
+
         c->u.word = command_s;
 
         push_front_command (command_stack, c);
+      }
+    }
 
-        print_stack_command (command_stack);
+    else if (is_operator (stack_word))
+    {
+      if (is_empty (operator_stack))
+      {
+        push_front_word (operator_stack, stack_word);
+      }
+      else
+      {
+        if (get_precedence(stack_word) > get_precedence(get_top_word(operator_stack)))
+        {
+          push_front_word (operator_stack, stack_word);
+        }
+        else
+        {
+          while (get_top_word(operator_stack))
+          {
+            char *operator = pop_front_word (operator_stack);
+            command_t command2 = pop_front_command (command_stack);
+            command_t command1 = pop_front_command (command_stack);
+
+            if (!strcmp (operator, "&&"))
+            {
+              command_t c = malloc (sizeof(struct command));
+              c->type = AND_COMMAND;
+              c->input = NULL;
+              c->output = NULL;
+              c->u.command[0] = command1;
+              c->u.command[1] = command2;
+              push_end_command (cs->commands_list, c);
+            }
+            else if (!strcmp (operator, "||"))
+            {
+              command_t c = malloc (sizeof(struct command));
+              c->type = OR_COMMAND;
+              c->input = NULL;
+              c->output = NULL;
+              c->u.command[0] = command1;
+              c->u.command[1] = command2;
+              push_end_command (cs->commands_list, c);
+            }
+            else if (!strcmp (operator, "|"))
+            {
+              command_t c = malloc (sizeof(struct command));
+              c->type = PIPE_COMMAND;
+              c->input = NULL;
+              c->output = NULL;
+              c->u.command[0] = command1;
+              c->u.command[1] = command2;
+              push_end_command (cs->commands_list, c);
+            }
+
+          }
+          push_front_word (operator_stack, stack_word);
+        }
+      }
+    }
+
+    else if (is_io_redir (stack_word))
+    {
+      if (!strcmp (stack_word, "<"))
+      {
+        input_flag = 1;
+      }
+      else
+      {
+        output_flag = 1;
+      }
+    }
+
+    else if (!strcmp (stack_word, ";"))
+    {
+      while (!is_empty (operator_stack) && size_of_stack (command_stack) >= 2)
+      {
+        char *operator = pop_front_word (operator_stack);
+        command_t command2 = pop_front_command (command_stack);
+        command_t command1 = pop_front_command (command_stack);
+        if (!strcmp (operator, "&&"))
+        {
+          command_t c = malloc (sizeof(struct command));
+          c->type = AND_COMMAND;
+          c->input = NULL;
+          c->output = NULL;
+          c->u.command[0] = command1;
+          c->u.command[1] = command2;
+          push_end_command (cs->commands_list, c);
+        }
+        else if (!strcmp (operator, "||"))
+        {
+          command_t c = malloc (sizeof(struct command));
+          c->type = OR_COMMAND;
+          c->input = NULL;
+          c->output = NULL;
+          c->u.command[0] = command1;
+          c->u.command[1] = command2;
+          push_end_command (cs->commands_list, c);
+        }
+        else if (!strcmp (operator, "|"))
+        {
+          command_t c = malloc (sizeof(struct command));
+          c->type = PIPE_COMMAND;
+          c->input = NULL;
+          c->output = NULL;
+          c->u.command[0] = command1;
+          c->u.command[1] = command2;
+          push_end_command (cs->commands_list, c);
+        }
+      }
+
+      command_t c = pop_front_command (command_stack);
+      if (c)
+      {
+        push_end_command (cs->commands_list, c);
       }
     }
   }
 
+  print_stack_command (cs->commands_list);
 
   /********************* ALGORITHM *********************/
 
@@ -205,6 +335,8 @@ make_command_stream (int (*get_next_byte) (void *),
 	free (stream);
   return cs;
 }
+
+int returned = 0;
 
 command_t
 read_command_stream (command_stream_t s)
@@ -214,27 +346,62 @@ read_command_stream (command_stream_t s)
 		c = pop_front_command (s->commands_list);
   return c;
   
-  // command_t c = malloc (sizeof(struct command));
-  // c->type = SIMPLE_COMMAND;
-  // c->input = "file.c";
-  // c->output = "results.txt";
-  // char **command_s = malloc(2*sizeof(char *));
-  // *command_s = malloc(strlen("cat")+1);
-  // strcpy (*command_s, "cat");
-  // *(command_s+1) = malloc(strlen("true")+1);
-  // strcpy (*(command_s+1), "true");
+  // if (returned)
+  // {
+  //   return NULL;
+  // }
+  // else
+  // {
+  //   command_t c = malloc (sizeof(struct command));
+  //   c->type = SIMPLE_COMMAND;
+  //   c->input = "file.c";
+  //   c->output = "results.txt";
+  //   char **command_s = malloc(3 * sizeof(char *));
+  //   *command_s = malloc(strlen("cat")+1);
+  //   strcpy (*command_s, "cat");
+  //   *(command_s+1) = malloc(strlen("true")+1);
+  //   strcpy (*(command_s+1), "true");
+  //   *(command_s+2) = NULL;
 
-  // returned = 1;
+  //   returned = 1;
 
-  // c->u.word = command_s;
-  // return c;
+  //   c->u.word = command_s;
+  //   return c;
+  // } 
+}
+
+int get_precedence (char *word)
+{
+  if (word == NULL)
+  {
+    fprintf(stderr, "NULL word in get_precedence\n");
+    return -1;
+  }
+  if (!strcmp (word, ";"))
+  {
+    return 1;
+  }
+  else if (!strcmp (word, "&&") || !strcmp (word, "||"))
+  {
+    return 2;
+  }
+  else if (!strcmp (word, "|"))
+  {
+    return 3;
+  }
+  return -1;
+}
+
+int is_io_redir (char *word)
+{
+  if (!strcmp(word, "<") || !strcmp(word, ">"))
+    return 1;
+  return 0;
 }
 
 int is_operator (char *word)
 {
-  if (!strcmp(word, "&&") || !strcmp(word, "||") || 
-    !strcmp(word, "|") || !strcmp(word, "(")
-    || !strcmp(word, ")"))
+  if (!strcmp(word, "&&") || !strcmp(word, "||") || !strcmp(word, "|"))
     return 1;
   return 0;
 }
@@ -280,6 +447,12 @@ is_empty (stack_t *stack)
 	return stack->size == 0;
 }
 
+char *
+get_top_word (stack_t *stack)
+{
+  return stack->head->word;
+}
+
 /************ push end word ************/
 void 
 push_end_word (stack_t *stack, char *val)
@@ -291,7 +464,8 @@ push_end_word (stack_t *stack, char *val)
 	if (stack->head == NULL)
 	{
 		stack->head = malloc (sizeof(node_t));
-		stack->head->word = val;
+		stack->head->word = malloc(strlen(val)+1);
+    strcpy (stack->head->word, val);
 		stack->head->next = NULL;
 		stack->head->previous = NULL;
 		stack->end = stack->head;
@@ -301,7 +475,8 @@ push_end_word (stack_t *stack, char *val)
 
 	// when stack is not empty
 	node_t *new_node = malloc (sizeof(node_t));
-	new_node->word = val;
+  new_node->word = malloc(strlen(val)+1);
+  strcpy (new_node->word, val);
 	new_node->next = NULL;
 	new_node->previous = stack->end;
 	new_node->previous->next = new_node;
@@ -321,7 +496,8 @@ push_front_word (stack_t *stack, char *val)
 	if (stack->head == NULL)
 	{
 		stack->head = malloc (sizeof(node_t));
-		stack->head->word = val;
+		stack->head->word = malloc(strlen(val)+1);
+    strcpy (stack->head->word, val);
 		stack->head->next = NULL;
 		stack->head->previous = NULL;
 		stack->end = stack->head;
@@ -331,7 +507,8 @@ push_front_word (stack_t *stack, char *val)
 
 	// when stack is not empty
 	node_t *new_node = malloc (sizeof(node_t));
-	new_node->word = val;
+	new_node->word = malloc(strlen(val)+1);
+  strcpy (new_node->word, val);
 	new_node->next = stack->head;
 	new_node->previous = NULL;
 	new_node->next->previous = new_node;
@@ -549,18 +726,25 @@ print_stack_command (stack_t *stack)
 {
 	node_t *current = stack->head;
 	fprintf(stderr, "======STACK======\n");
-	fprintf(stderr, "SIZE: %d\n", (int)stack->size);
+	fprintf(stderr, "STACK-SIZE: %d\n", (int)stack->size);
 	while (current)
 	{
-		fprintf(stderr, "%d\n", (int)current->command->type);
-    char **words = current->command->u.word;
-    int c = 0;
+    command_t c = current->command;
+    fprintf(stderr, "-------COMMAND-------\n");
+		fprintf(stderr, "TYPE: %d\n", (int)current->command->type);
+    if (c->input)
+      fprintf(stderr, "INPUT %s\n", c->input);
+    if (c->output)
+      fprintf(stderr, "OUTPUT %s\n", c->output);
+    char **words = c->u.word;
+    int cc = 0;
     while (*words)
     {
-      fprintf(stderr, "%d : %s\n", c, *words);
-      c++;
+      fprintf(stderr, "%d : %s\n", cc, *words);
+      cc++;
       words++;
     }
+    fprintf(stderr, "-------COMMAND END-------\n\n");
 		current = current->next;
 	}
 	fprintf(stderr, "=======END=======\n");
