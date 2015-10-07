@@ -44,6 +44,7 @@ struct command_stream
 
 int is_valid (int c);
 int is_special (int c);
+int is_operator (char *word);
 
 char *get_stream_from_input (int (*get_next_byte) (void *), 
 	void *get_next_byte_argument);
@@ -92,6 +93,102 @@ make_command_stream (int (*get_next_byte) (void *),
 	command_stream_t cs = malloc (sizeof (struct command_stream));
 	cs->commands_list = create_stack ();
 
+
+  /********************* ALGORITHM *********************/
+
+  stack_t *word_stack = create_stack ();
+
+  char *buffer;
+  size_t size;
+  FILE *buffer_stream = open_memstream (&buffer, &size);
+
+  size_t len = strlen (stream);
+  size_t i = 0;
+  for (; i < len; i++)
+  {
+    char cc = stream[i];
+    if (cc != ' ')
+    {
+      fprintf(buffer_stream, "%c", cc);
+      fflush (buffer_stream);
+    }
+    else
+    {
+      /* processing */
+      char *word = malloc (strlen(buffer)+1);
+      strcpy (word, buffer);
+      push_end_word (word_stack, word);
+
+      // fprintf(stderr, "%s\n", buffer);
+      free (buffer);
+      buffer_stream = open_memstream (&buffer, &size);
+    }
+  }
+
+  // print_stack_word (word_stack);
+
+  stack_t *command_stack = create_stack ();
+  stack_t *operator_stack = create_stack ();
+
+  char *stack_word = NULL;
+  while (!is_empty (word_stack))
+  {
+    stack_word = pop_front_word (word_stack);
+    if (!is_operator(stack_word))
+    {
+      if (!is_empty (command_stack))
+      {
+        command_t top = pop_front_command (command_stack);
+        // fprintf(stderr, "got here 1\n");
+        if (top->type == SIMPLE_COMMAND)
+        {
+          int count = 0;
+          // fprintf(stderr, "got here 2\n");
+
+          while (top->u.word[count] != NULL)
+          {
+            // fprintf(stderr, "%d\n", count);
+            count++;
+          }
+          // fprintf(stderr, "got here 3\n");
+          
+          char **command_s = malloc((count+1)*sizeof(char *));
+          int pos = 0;
+          for (; pos < count; pos++)
+          {
+            *(command_s+pos) = malloc(strlen( *((top->u.word)+pos) + 1 ));
+            strcpy (*(command_s+pos), *((top->u.word)+pos));
+          }
+          *(command_s+pos+1) = malloc(strlen(stack_word)+1);
+          strcpy (*(command_s+pos+1), stack_word);
+
+          top->u.word = command_s;
+          push_front_command (command_stack, top);
+        }
+        else
+        {
+          push_front_command (command_stack, top);
+        }
+      }
+      else
+      {
+        command_t c = malloc (sizeof(struct command));
+        c->type = SIMPLE_COMMAND;
+        char **command_s = malloc(sizeof(char *));
+        *command_s = malloc(strlen(stack_word)+1);
+        strcpy (*command_s, stack_word);
+        c->u.word = command_s;
+
+        push_front_command (command_stack, c);
+      }
+    }
+  }
+
+  print_stack_command (command_stack);
+
+  /********************* ALGORITHM *********************/
+
+
 	free (stream);
   return cs;
 }
@@ -118,6 +215,15 @@ read_command_stream (command_stream_t s)
 
   // c->u.word = command_s;
   // return c;
+}
+
+int is_operator (char *word)
+{
+  if (!strcmp(word, "&&") || !strcmp(word, "||") || 
+    !strcmp(word, "|") || !strcmp(word, "(")
+    || !strcmp(word, ")"))
+    return 1;
+  return 0;
 }
 
 
@@ -434,6 +540,8 @@ print_stack_command (stack_t *stack)
 	while (current != NULL)
 	{
 		fprintf(stderr, "%d\n", (int)current->command->type);
+    char **words = current->command->u.word;
+    fprintf(stderr, "%s\n", words[0]);
 		current = current->next;
 	}
 	fprintf(stderr, "=======END=======\n");
