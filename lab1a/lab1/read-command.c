@@ -93,8 +93,8 @@ make_command_stream (int (*get_next_byte) (void *),
 	// test_stack_word ();
 
 	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
-	fprintf(stderr, "%s\n", stream);
-	fprintf(stderr, "----------------------------------\n");
+	// fprintf(stderr, "%s\n", stream);
+	// fprintf(stderr, "----------------------------------\n");
 
 	command_stream_t cs = malloc (sizeof (struct command_stream));
 	cs->commands_list = create_stack ();
@@ -143,12 +143,12 @@ make_command_stream (int (*get_next_byte) (void *),
   while (!is_empty (word_stack))
   {
     stack_word = pop_front_word (word_stack);
-    fprintf(stderr, "------------------STACK WORD---------------: %s\n", stack_word);
-    fprintf(stderr, "\n");
-    print_stack_command (command_stack);
-    fprintf(stderr, "\n");
-    print_stack_word (operator_stack);
-    fprintf(stderr, "\n");
+    // fprintf(stderr, "------------------STACK WORD---------------: %s\n", stack_word);
+    // fprintf(stderr, "\n");
+    // print_stack_command (command_stack);
+    // fprintf(stderr, "\n");
+    // print_stack_word (operator_stack);
+    // fprintf(stderr, "\n");
     if (input_flag || output_flag)
     {
       command_t c = pop_front_command (command_stack);
@@ -235,7 +235,6 @@ make_command_stream (int (*get_next_byte) (void *),
         }
         else
         {
-          fprintf(stderr, "GOT HERE %s\n", stack_word);
           while (get_top_word(operator_stack))
           {
             char *operator = pop_front_word (operator_stack);
@@ -252,7 +251,7 @@ make_command_stream (int (*get_next_byte) (void *),
               c->u.command[0] = command1;
               c->u.command[1] = command2;
               push_front_command (command_stack, c);
-              fprintf(stderr, "Created AND COMMAND\n");
+              // fprintf(stderr, "Created AND COMMAND\n");
             }
             else if (!strcmp (operator, "||"))
             {
@@ -264,7 +263,7 @@ make_command_stream (int (*get_next_byte) (void *),
               c->u.command[0] = command1;
               c->u.command[1] = command2;
               push_front_command (command_stack, c);
-              fprintf(stderr, "Created OR COMMAND\n");
+              // fprintf(stderr, "Created OR COMMAND\n");
             }
             else if (!strcmp (operator, "|"))
             {
@@ -276,7 +275,7 @@ make_command_stream (int (*get_next_byte) (void *),
               c->u.command[0] = command1;
               c->u.command[1] = command2;
               push_front_command (command_stack, c);
-              fprintf(stderr, "Created PIPE COMMAND\n");
+              // fprintf(stderr, "Created PIPE COMMAND\n");
             }
 
           }
@@ -317,7 +316,7 @@ make_command_stream (int (*get_next_byte) (void *),
           c->u.command[0] = command1;
           c->u.command[1] = command2;
           push_front_command (command_stack, c);
-          fprintf(stderr, "Created AND COMMAND\n");
+          // fprintf(stderr, "Created AND COMMAND\n");
         }
         else if (!strcmp (operator, "||"))
         {
@@ -329,7 +328,7 @@ make_command_stream (int (*get_next_byte) (void *),
           c->u.command[0] = command1;
           c->u.command[1] = command2;
           push_front_command (command_stack, c);
-          fprintf(stderr, "Created OR COMMAND\n");
+          // fprintf(stderr, "Created OR COMMAND\n");
         }
         else if (!strcmp (operator, "|"))
         {
@@ -341,7 +340,7 @@ make_command_stream (int (*get_next_byte) (void *),
           c->u.command[0] = command1;
           c->u.command[1] = command2;
           push_front_command (command_stack, c);
-          fprintf(stderr, "Created PIPE COMMAND\n");
+          // fprintf(stderr, "Created PIPE COMMAND\n");
         }
       }
 
@@ -352,9 +351,9 @@ make_command_stream (int (*get_next_byte) (void *),
         c = pop_front_command (command_stack);
       }
 
-      fprintf(stderr, "===============================================\n");
-      print_stack_command (cs->commands_list);
-      fprintf(stderr, "===============================================\n");
+      // fprintf(stderr, "===============================================\n");
+      // print_stack_command (cs->commands_list);
+      // fprintf(stderr, "===============================================\n");
 
       new_command_flag = 1;
     }
