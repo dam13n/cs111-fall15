@@ -1,4 +1,16 @@
-This is a skeleton for CS 111 Lab 1.
+------------------------------------------------------------------------------
 
-Replace this README file with notes on your implementation.
-Mentions any special features or limitations.
+Partners: 
+
+Qingwei Lan (404458762)
+Siyuan Liu ()
+
+------------------------------------------------------------------------------
+
+Limitations in Code:
+
+The program passes both test scripts and the way it is built makes it easily
+extended. New features may be added without much work. However, this program
+may have memory leaks that have not been debugged.
+
+------------------------------------------------------------------------------
