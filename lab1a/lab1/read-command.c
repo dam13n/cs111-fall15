@@ -9,15 +9,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-/************ types of tokens ************/
-typedef enum token_type
-{
-	TOKEN_TYPE_AND,
-	TOKEN_TYPE_OR,
-	TOKEN_TYPE_PIPE,
-	TOKEN_TYPE_
-} token_type;
-
 /************ node ************/
 typedef struct node_t 
 {
