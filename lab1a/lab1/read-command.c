@@ -43,6 +43,7 @@ struct command_stream
 };
 
 /***************** helper functions *****************/
+void print_error (char *error_message, int line_number);
 void command_indented_print (int indent, command_t c);
 
 int is_valid (int c);
@@ -52,8 +53,6 @@ int is_io_redir (char *word);
 int get_precedence (char *word);
 
 char *get_stream_from_input (int (*get_next_byte) (void *), 
-	void *get_next_byte_argument);
-void test_stream (int (*get_next_byte) (void *), 
 	void *get_next_byte_argument);
 
 
@@ -88,12 +87,7 @@ command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
-	// test_stack_command ();
-	// test_stack_word ();
-
 	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
-	// fprintf(stderr, "%s\n", stream);
-	// fprintf(stderr, "----------------------------------\n");
 
 	command_stream_t cs = malloc (sizeof (struct command_stream));
 	cs->commands_list = create_stack ();
@@ -142,12 +136,6 @@ make_command_stream (int (*get_next_byte) (void *),
   while (!is_empty (word_stack))
   {
     stack_word = pop_front_word (word_stack);
-    // fprintf(stderr, "------------------STACK WORD---------------: %s\n", stack_word);
-    // fprintf(stderr, "\n");
-    // print_stack_command (command_stack);
-    // fprintf(stderr, "\n");
-    // print_stack_word (operator_stack);
-    // fprintf(stderr, "\n");
     if (input_flag || output_flag)
     {
       command_t c = pop_front_command (command_stack);
@@ -246,11 +234,9 @@ make_command_stream (int (*get_next_byte) (void *),
               c->type = AND_COMMAND;
               c->input = NULL;
               c->output = NULL;
-              // c->u.command = malloc (2*sizeof(command_t));
               c->u.command[0] = command1;
               c->u.command[1] = command2;
               push_front_command (command_stack, c);
-              // fprintf(stderr, "Created AND COMMAND\n");
             }
             else if (!strcmp (operator, "||"))
             {
@@ -258,11 +244,9 @@ make_command_stream (int (*get_next_byte) (void *),
               c->type = OR_COMMAND;
               c->input = NULL;
               c->output = NULL;
-              // c->u.command = malloc (2*sizeof(command_t));
               c->u.command[0] = command1;
               c->u.command[1] = command2;
               push_front_command (command_stack, c);
-              // fprintf(stderr, "Created OR COMMAND\n");
             }
             else if (!strcmp (operator, "|"))
             {
@@ -270,11 +254,9 @@ make_command_stream (int (*get_next_byte) (void *),
               c->type = PIPE_COMMAND;
               c->input = NULL;
               c->output = NULL;
-              // c->u.command = malloc (2*sizeof(command_t));
               c->u.command[0] = command1;
               c->u.command[1] = command2;
               push_front_command (command_stack, c);
-              // fprintf(stderr, "Created PIPE COMMAND\n");
             }
 
           }
@@ -311,11 +293,9 @@ make_command_stream (int (*get_next_byte) (void *),
           c->type = AND_COMMAND;
           c->input = NULL;
           c->output = NULL;
-          // c->u.command = malloc (2*sizeof(command_t));
           c->u.command[0] = command1;
           c->u.command[1] = command2;
           push_front_command (command_stack, c);
-          // fprintf(stderr, "Created AND COMMAND\n");
         }
         else if (!strcmp (operator, "||"))
         {
@@ -323,11 +303,9 @@ make_command_stream (int (*get_next_byte) (void *),
           c->type = OR_COMMAND;
           c->input = NULL;
           c->output = NULL;
-          // c->u.command = malloc (2*sizeof(command_t));
           c->u.command[0] = command1;
           c->u.command[1] = command2;
           push_front_command (command_stack, c);
-          // fprintf(stderr, "Created OR COMMAND\n");
         }
         else if (!strcmp (operator, "|"))
         {
@@ -335,11 +313,9 @@ make_command_stream (int (*get_next_byte) (void *),
           c->type = PIPE_COMMAND;
           c->input = NULL;
           c->output = NULL;
-          // c->u.command = malloc (2*sizeof(command_t));
           c->u.command[0] = command1;
           c->u.command[1] = command2;
           push_front_command (command_stack, c);
-          // fprintf(stderr, "Created PIPE COMMAND\n");
         }
       }
 
@@ -350,16 +326,9 @@ make_command_stream (int (*get_next_byte) (void *),
         c = pop_front_command (command_stack);
       }
 
-      // fprintf(stderr, "===============================================\n");
-      // print_stack_command (cs->commands_list);
-      // fprintf(stderr, "===============================================\n");
-
       new_command_flag = 1;
     }
   }
-
-  // print_stack_word (word_stack);
-  // print_stack_command (cs->commands_list);
 
   /********************* ALGORITHM *********************/
 
@@ -368,8 +337,6 @@ make_command_stream (int (*get_next_byte) (void *),
   return cs;
 }
 
-int returned = 0;
-
 command_t
 read_command_stream (command_stream_t s)
 {
@@ -377,29 +344,6 @@ read_command_stream (command_stream_t s)
 	if (!is_empty (s->commands_list))
 		c = pop_front_command (s->commands_list);
   return c;
-  
-  // if (returned)
-  // {
-  //   return NULL;
-  // }
-  // else
-  // {
-  //   command_t c = malloc (sizeof(struct command));
-  //   c->type = SIMPLE_COMMAND;
-  //   c->input = "file.c";
-  //   c->output = "results.txt";
-  //   char **command_s = malloc(3 * sizeof(char *));
-  //   *command_s = malloc(strlen("cat")+1);
-  //   strcpy (*command_s, "cat");
-  //   *(command_s+1) = malloc(strlen("true")+1);
-  //   strcpy (*(command_s+1), "true");
-  //   *(command_s+2) = NULL;
-
-  //   returned = 1;
-
-  //   c->u.word = command_s;
-  //   return c;
-  // } 
 }
 
 int get_precedence (char *word)
@@ -409,18 +353,13 @@ int get_precedence (char *word)
     fprintf(stderr, "NULL word in get_precedence\n");
     return -1;
   }
+
   if (!strcmp (word, ";"))
-  {
     return 1;
-  }
   else if (!strcmp (word, "&&") || !strcmp (word, "||"))
-  {
     return 2;
-  }
   else if (!strcmp (word, "|"))
-  {
     return 3;
-  }
   return -1;
 }
 
@@ -461,7 +400,6 @@ destroy_stack (stack_t *stack)
 	while (!is_empty (stack))
 	{
 		char *val = pop_front_word (stack);
-		// free (val);
 		print_stack_word (stack);
 	}
 	free (stack);
@@ -775,149 +713,11 @@ print_stack_command (stack_t *stack)
 	{
     command_t c = current->command;
     fprintf(stderr, "-------COMMAND-------\n");
-		// fprintf(stderr, "TYPE: %d\n", (int)current->command->type);
-  //   if (c->input)
-  //     fprintf(stderr, "INPUT %s\n", c->input);
-  //   if (c->output)
-  //     fprintf(stderr, "OUTPUT %s\n", c->output);
-  //   switch (c->type)
-  //   {
-  //     case SIMPLE_COMMAND:
-  //     {
-  //       char **words = c->u.word;
-  //       int cc = 0;
-  //       while (*words)
-  //       {
-  //         fprintf(stderr, "%d : %s\n", cc, *words);
-  //         cc++;
-  //         words++;
-  //       }
-  //       break;
-  //     }
-
-  //     case AND_COMMAND:
-  //     case SEQUENCE_COMMAND:
-  //     case OR_COMMAND:
-  //     case PIPE_COMMAND:
-  //     {
-  //       command_t c1 = c->u.command[0];
-  //       char **words = c1->u.word;
-  //       int cc = 0;
-  //       while (*words)
-  //       {
-  //         fprintf(stderr, "%d : %s\n", cc, *words);
-  //         cc++;
-  //         words++;
-  //       }
-
-  //       command_t c2 = c->u.command[1];
-  //       words = c2->u.word;
-  //       cc = 0;
-  //       while (*words)
-  //       {
-  //         fprintf(stderr, "%d : %s\n", cc, *words);
-  //         cc++;
-  //         words++;
-  //       }
-  //       break;
-  //     }
-
-  //     default: break;
-
-  //   }
-
     command_indented_print (4, c);
-    
     fprintf(stderr, "-------COMMAND END-------\n\n");
 		current = current->next;
 	}
 	fprintf(stderr, "=======END=======\n");
-}
-
-void 
-test_stack_word () 
-{
-	stack_t *stack = create_stack ();
-
-	push_end_word (stack, "cc");
-	print_stack_word (stack);
-	push_end_word (stack, "aa");
-	print_stack_word (stack);
-	push_front_word (stack, "bb");
-	print_stack_word (stack);
-	push_end_word (stack, "gg");
-	print_stack_word (stack);
-	push_front_word (stack, "fuck This!!!");
-	print_stack_word (stack);
-	
-	char *word = NULL;
-	fprintf(stderr, "popped: %s\n", (word = pop_front_word(stack)));
-	print_stack_word (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_end_word(stack)));
-	print_stack_word (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_end_word(stack)));
-	print_stack_word (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_front_word(stack)));
-	print_stack_word (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_front_word(stack)));
-	print_stack_word (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_end_word(stack)));
-	print_stack_word (stack);
-	fprintf(stderr, "popped: %s\n", (word = pop_front_word(stack)));
-	print_stack_word (stack);
-
-	destroy_stack (stack);
-	free (word);
-}
-
-void
-test_stack_command ()
-{
-	stack_t *stack = create_stack ();
-
-	push_front_command (stack, get_command (AND_COMMAND));
-	print_stack_command (stack);
-	push_front_command (stack, get_command (OR_COMMAND));
-	print_stack_command (stack);
-	push_front_command (stack, get_command (SUBSHELL_COMMAND));
-	print_stack_command (stack);
-	push_front_command (stack, get_command (SIMPLE_COMMAND));
-	print_stack_command (stack);
-
-	command_t c = NULL;
-	c = pop_front_command (stack);
-	print_stack_command (stack);
-	free (c);
-	c = pop_front_command (stack);
-	print_stack_command (stack);
-	free (c);
-	c = pop_front_command (stack);
-	print_stack_command (stack);
-	free (c);
-	c = pop_front_command (stack);
-	print_stack_command (stack);
-	free (c);
-	c = pop_front_command (stack);
-	print_stack_command (stack);
-	free (c);
-	c = pop_front_command (stack);
-	print_stack_command (stack);
-	free (c);
-	c = pop_front_command (stack);
-	print_stack_command (stack);
-	free (c);
-	c = pop_front_command (stack);
-	print_stack_command (stack);
-	free (c);
-
-	destroy_stack (stack);
-}
-
-command_t get_command (enum command_type type)
-{
-	command_t c = malloc(sizeof(struct command));
-	c->type = type;
-	return c;
 }
 
 /*************************************/
@@ -947,14 +747,181 @@ get_stream_from_input (int (*get_next_byte) (void *),
 	fclose (stream);
 
 
+  /************ check for errors in formating ************/
+  int line_count = 1;
+  int open_paren_count = 0;
+  int comment_flag = 0;
+
+  unsigned int pos = 0;
+  unsigned int i = 0;
+  unsigned int length = strlen (buffer);
+
+  for (; i < length; i++)
+  {
+    int cc = buffer[i];
+
+    if (comment_flag)
+    {
+      if (cc == '\n')
+      {
+        comment_flag = 0;
+        continue;
+      }
+      else
+      {
+      continue;
+      }
+    }
+
+    if (cc == '#')
+    {
+      comment_flag = 1;
+      continue;
+    }
+
+    if (!is_valid (cc) && !is_special (cc)
+      && cc != ' ' && cc != '\n')
+    {
+      print_error ("Invalid character.", line_count);
+    }
+
+    if (cc == '|')
+    {
+      if (i == 0)
+      {
+        print_error ("'|' at the start.", line_count);
+      }
+      else if (i == (length-2))
+      {
+        print_error ("'|' at the end.", line_count);
+      }
+      else if ((i+2) < (length-1))
+      {
+        if (buffer[i+1] == '|' && buffer[i+2] == '|')
+        {
+          print_error ("Excess '|'.", line_count);
+        }
+      }
+    }
+
+    else if (cc == '&')
+    {
+      if (i == 0)
+      {
+        print_error ("'&' at the start.", line_count);
+      }
+      else if (i == (length-2))
+      {
+        print_error ("'&' at the end.", line_count);
+      }
+      else if ((i+2) < (length-1))
+      {
+        if (buffer[i+1] == '&' && buffer[i+2] == '&')
+        {
+          print_error ("Excess '&'.", line_count);
+        }
+      }
+    }
+
+    else if (cc == ';')
+    {
+      if (i == 0)
+      {
+        print_error ("';' at the start.", line_count);
+      }
+      else if ((i+1) < (length-1))
+      {
+        if (buffer[i+1] == ';')
+        {
+          print_error ("Excess ';'.", line_count);
+        }
+      }
+    }
+
+    else if (cc == '<')
+    {
+      if (i == 0)
+      {
+        print_error ("'<' at the start.", line_count);
+      }
+      else if (i == (length-2))
+      {
+        print_error ("'<' at the end.", line_count);
+      }
+      else if ((i+2) < (length-1))
+      {
+        if (buffer[i+1] == '<' && buffer[i+2] == '<')
+        {
+          print_error ("Invalid '<<<'.", line_count);
+        }
+      }
+    }
+
+    else if (cc == '>')
+    {
+      if (i == 0)
+      {
+        print_error ("'>' at the start.", line_count);
+      }
+      else if (i == (length-2))
+      {
+        print_error ("'>' at the end.", line_count);
+      }
+      else if ((i+2) < (length-1))
+      {
+        if (buffer[i+1] == '>' && buffer[i+2] == '>')
+        {
+          print_error ("Invalid '>>>'.", line_count);
+        }
+      }
+    }
+
+    else if (cc == '\n')
+    {
+      if (i == (length-1))
+        continue;
+
+      line_count++;
+
+      unsigned int temp = i+1;
+      for (; temp < length-1; temp++)
+      {
+        if (buffer[temp] == ' ' || buffer[temp] == '\n')
+        {
+          continue;
+        }
+        else
+        {
+          if (!is_valid (buffer[temp]))
+          {
+            print_error ("Invalid character after newline", line_count);
+          }
+          else
+          {
+            break;
+          }
+        }
+      }
+    }
+
+    else if (cc == '(')
+      open_paren_count++;
+    else if (cc == ')')
+      open_paren_count--;
+  }
+
+  if (open_paren_count != 0)
+    print_error ("Non-matching parentheses.", line_count);
+
+
 	/************ reformat (insert spaces) ************/
 	// state flags
-	int comment_flag = 0;
+  comment_flag = 0;
 
-	unsigned int length = strlen (buffer);
 	char *script = (char *) malloc (3*length);
-	unsigned int pos = 0;
-	unsigned int i = 0;
+  pos = 0;
+  i = 0;
+
 	for (; i < length; i++)
 	{
 		// realloc if script is full
@@ -976,6 +943,7 @@ get_stream_from_input (int (*get_next_byte) (void *),
 				script[pos] = cc;
 				pos++;
 				comment_flag = 0;
+        line_count++;
 				continue;
 			}
 		}
@@ -997,7 +965,7 @@ get_stream_from_input (int (*get_next_byte) (void *),
 			script[pos] = cc;
 			pos++;
 
-			if ((i+2) < (length-1))
+			if ((i+3) < (length-1))
 			{
 				if (buffer[i+1] == '&' && buffer[i+2] == '&')
 				{
@@ -1028,17 +996,32 @@ get_stream_from_input (int (*get_next_byte) (void *),
 					pos++;
 				}
 			}
+      line_count++;
 		}
 
 		else if (is_special (cc))
 		{
 			switch (cc)
 			{
-				case '(':
-				case ')':
 				case '<':
+        {
+          if (script[pos-1] != ' ' && script[pos-1] != '\n')
+          {
+            script[pos] = ' ';
+            pos++;
+            script[pos] = cc;
+            pos++;
+          }
+          else
+          {
+            script[pos] = cc;
+            pos++;
+          }
+          break;
+        }
+
 				case '>':
-				{
+				{        
 					if (script[pos-1] != ' ' && script[pos-1] != '\n')
 					{
 						script[pos] = ' ';
@@ -1098,14 +1081,10 @@ get_stream_from_input (int (*get_next_byte) (void *),
 		{
 			if (cc != '\n')
 			{
-				buffer[pos] = cc;
-				pos++;
 				continue;
 			}
 			else
 			{
-				buffer[pos] = cc;
-				pos++;
 				comment_flag = 0;
 				continue;
 			}
@@ -1114,8 +1093,6 @@ get_stream_from_input (int (*get_next_byte) (void *),
 		if (cc == '#')
 		{
 			comment_flag = 1;
-			buffer[pos] = cc;
-			pos++;
 		}
 
 		else if (cc == ' ')
@@ -1290,55 +1267,32 @@ is_valid (int c)
 	if (isalpha (c) || isdigit (c))
 		return 1;
 
-	switch (c)
-	{
-		case '!':
-		case '%':
-		case '+':
-		case '-':
-		case ',':
-		case '.':
-		case '/':
-		case ':':
-		case '@':
-		case '^':
-		case '_':
-		case '#':
-			return 1;
-			break;
-		default: break;
-	}
-
+  if (c == '!' || c == '%' || c == '+' || c == '-'
+    || c == ',' || c == '.' || c == '/' || c == ':'
+    || c == '@' || c == '^' || c == '_' || c == '#')
+  {
+    return 1;
+  }
 	return 0;
 }
 
 int
 is_special (int c)
 {
-	switch (c)
-	{
-		case ';':
-		case '|':
-		case '&':
-		case '(':
-		case ')':
-		case '<':
-		case '>':
-			return 1;
-			break;
-		default: break;
-	}
-
+  if (c == ';' || c == '|' || c == '&' || c == '(' 
+    || c == ')' || c == '<' || c == '>')
+  {
+    return 1;
+  }
 	return 0;
 }
 
+
 void
-test_stream (int (*get_next_byte) (void *), 
-	void *get_next_byte_argument)
+print_error (char *error_message, int line_number)
 {
-	char *stream = get_stream_from_input (get_next_byte, get_next_byte_argument);
-	fprintf(stderr, "%s\n", stream);
-	free (stream);
+  fprintf(stderr, "Line %d: %s\n", line_number, error_message);
+  exit (1);
 }
 
 
